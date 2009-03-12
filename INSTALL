@@ -1,5 +1,11 @@
 TIGER Geocoder
 
+2009/03/12 install instructions:
+
+These need to seriously be updated for the new scripts which have been
+written to import the TIGER data from the shapefiles now provided by
+the US Census.
+
 2007/07/03 install instructions:
 
 - Install postgresql-8.2-postgis (For various GIS bits)
