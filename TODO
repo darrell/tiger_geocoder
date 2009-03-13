@@ -1,0 +1,10 @@
+= import/import_tiger_shps.sh
+I'm not sure yet what needs to be done as far as merging
+the imported files, creating views, etc. As such,
+the merge function is almost certainly incomplete.
+
+It would be nice if we could find a good way to supress
+shp2pgsql's need to spit out lines like:
+  Shapefile type: Point
+  Postgis type: POINT[2]
+
