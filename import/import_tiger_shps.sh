@@ -268,7 +268,7 @@ function usage () {
   -D               Drop tables before creating/loading the data (default is to not drop)
  
   -h  hostname     Database host (default: \$PGHOST if defined, else 'localhost')
-  -u  username     Database username (default: \$PGHOST if defined else your username)
+  -u  username     Database username (default: \$PGUSER if defined else your username)
   -d  dbname       Database name (default: \$PGDATABASE if defined else 'tiger')
   -p  dbport       Database port (default: \$PGPORT if defined else 5432)
  
