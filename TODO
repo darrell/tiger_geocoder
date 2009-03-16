@@ -1,10 +1,24 @@
-= import/import_tiger_shps.sh
-I'm not sure yet what needs to be done as far as merging
-the imported files, creating views, etc. As such,
-the merge function is almost certainly incomplete.
-
+---
 It would be nice if we could find a good way to supress
 shp2pgsql's need to spit out lines like:
   Shapefile type: Point
   Postgis type: POINT[2]
+---
+The following should be equivalent, can we match them?:
+
+3244 Highway 116 N, Sebastopol, CA, 95472
+3244 Gravenstein Highway N, Sebastopol, CA 95472
+
+Why do we have different addys for:
+
+select * from geocode('3244 Gravenstein Highway,  Sebastopol, CA 95472');
+select * from normalize_address('3244 Gravenstein Highway, Sebastopol, CA 95472');
+                       addy                       |                      geomout                       | rating 
+--------------------------------------------------+----------------------------------------------------+--------
+(3244,,Gravenstein,Hwy,N,,Sebastopol,CA,95472,t) | 0101000020AD100000E6AB07A4F5B65EC0AB11A69328384340 |      0
+
+ address | predirabbrev | streetname  | streettypeabbrev | postdirabbrev | internal |  location  | stateabbrev |  zip  | parsed 
+---------+--------------+-------------+------------------+---------------+----------+------------+-------------+-------+--------
+    3244 |              | Gravenstein | Hwy              |               |          | Sebastopol | CA          | 95472 | t
+
 

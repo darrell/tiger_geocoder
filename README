@@ -7,7 +7,7 @@ TIGER Geocoder
 Design:
 
 There are two components to the geocoder, the address normalizer and the
-address geocoder.  These two components are described seperatly below.
+address geocoder.  These two components are described separately below.
 
 The goal of this project is to build a fully functional geocoder that can 
 process an arbitrary address string and, using normalized TIGER censes data,

@@ -12,7 +12,7 @@ SETBASE="tl_2008"
 SCHEMA_PREFIX="tiger"
 
 # Skip Census 2000 data if there is current data?
-SKIP00="false"
+SKIP00="true"
 
 # First, handle the national data
 TMPDIR=`mktemp -d tiger_tmpXXXX`
@@ -150,11 +150,14 @@ function reproject () {
 function addcols () {
   local SCHEMA=$1
   local TABLE=$2
-  local FIPS=`echo ${SCHEMA} | awk -F_ '/_[0-9][0-9]$/ {print $NF}'`
+  local FIPS=`echo ${SCHEMA} | awk -F_ '/_[0-9u][0-9s]$/ {print $NF}'`
 
   if [ -z "${FIPS}" ]; then
     error "cannot find fips code for ${SCHEMA} - that is probably not good"
     return 1
+  fi
+  if [ "${FIPS}" = 'us' ]; then
+    return
   fi
   echo ${TABLE}| egrep -q '00$'
   if [ $? -eq 0 ]; then
@@ -205,7 +208,7 @@ function loadshp () {
     "${NEWFILE}" \
     "${SCHEMA}.${TABLE}"\
     ${CMD_EXTRAS} \
-    | (echo set client_min_messages=fatal\; ;cat -) \
+    | (echo set client_min_messages=error\; ;cat -) \
     | ${PSQL_CMD_NULL} \
     | egrep -v '^(INSERT INTO|BEGIN;|END;)' # you really don't want to see a zillion insert statements
     addcols "$SCHEMA" "$TABLE"
@@ -226,7 +229,7 @@ function loaddbf () {
     -n \
     "${FILE}" \
     "${SCHEMA}.${TABLE}" \
-    | (echo set client_min_messages=fatal\; ;cat -) \
+    | (echo set client_min_messages=error\; ;cat -) \
     | ${PSQL_CMD_NULL} \
     | egrep -v '^(INSERT INTO|BEGIN;|END;)' # you really don't want to see a zillion insert statements
   addcols "$SCHEMA" "$TABLE"
@@ -238,7 +241,7 @@ function create_schema () {
   if [ "${DROP_SCHEMA}" = "true" ]; then
     EXT="drop schema if exists $SCHEMA cascade;"
   fi
-  cat<<EOT  | (echo 'set client_min_messages=fatal;';cat -) | ${PSQL_CMD_NULL}
+  cat<<EOT  | (echo 'set client_min_messages=error;';cat -) | ${PSQL_CMD_NULL}
   $EXT
   create schema $SCHEMA;
 EOT
@@ -277,7 +280,7 @@ function usage () {
   -r  SRID         If given, and is different from the default SRID (see: -R), 
                    then reproject to this SRID before import. (requires ogr2ogr be installed)
 
-  -i               Ignore files matching *00.shp,i.e. from 2000. (default false)
+  -0               Include files matching *00.shp,i.e. files from 2000. (default: exclude shapes ending in 00)
   Uncommon options:
 
   -b  file_prefix  String that matches the beginning of individual tiger files (default: tl_2008)
@@ -309,7 +312,7 @@ while getopts  "n:s:c:H:u:d:DB:b:E:S:hvXr:R:qp:iM" flag; do
     R)  DEFAULT_SRID="$OPTARG";;
     v)  DEBUG="true";;
     q)  QUIET="true";;
-    i)  SKIP00="true";;
+    0)  SKIP00="false";;
     M)  DO_MERGE="true";;
     [?]) usage ;;
   esac
@@ -346,14 +349,14 @@ if [ "${COUNTIES}" = 'none' ]; then
 fi
 
 # how do we call psql
-PSQL_CMD_ARGS="-U ${DBUSER} -d ${DB} -h ${HOST} -p ${DBPORT} -q -1 --set VERBOSITY=terse"
+PSQL_CMD_ARGS="-U ${DBUSER} -d ${DB} -h ${HOST} -p ${DBPORT} -q -1 --set VERBOSITY=terse --set ON_ERROR_STOP=true"
 if [ "${DEBUG}" = 'true' ]; then
   PSQL_CMD_EXTRAS='-e'
 else
   PSQL_CMD_EXTRAS=''
 fi
 PSQL_CMD="${PSQL} ${PSQL_CMD_EXTRAS} ${PSQL_CMD_ARGS}"
-PSQL_CMD_NULL="${PSQL} -o /dev/null ${PSQL_CMD_EXTRAS} ${PSQL_CMD_ARGS}|| (error 'psql failed';exit 1)"
+PSQL_CMD_NULL="${PSQL} -o /dev/null ${PSQL_CMD_EXTRAS} ${PSQL_CMD_ARGS}  || (error 'psql failed';exit 1)"
 # Handle case where we were given a 5-digit county
 echo $COUNTIES | grep -qE '[0-9]{5}'
 if [ $? -eq 0 ]; then
@@ -444,31 +447,36 @@ fi
 rm -rf ${TMPDIR}
 
 if [ "${DO_MERGE}" = 'true' ]; then
-  MYSCHEMAS=`${PSQL_CMD} -t -c '\\dn' | egrep "^ +${SCHEMA_PREFIX}" | sed -e 's/|.*//'`
+  MYSCHEMAS=`${PSQL_CMD} -t -c '\\dn' | egrep "^ +${SCHEMA_PREFIX}_[0-9u][0-9s]" | sed -e 's/|.*//'`
   TABLES=`(for schema in $MYSCHEMAS; do
     ${PSQL_CMD} -t -c "\\dt ${schema}."
   done) | cut -d\| -f 2 | sort -u`
+  note Found tables: ${TABLES}
   for table in $TABLES; do
+      note Processing table ${table}...
     VIEW=''
     for schema in ${MYSCHEMAS}; do
+      note "   Processing schema $schema..."
       ${PSQL_CMD} -t -c "\dt ${schema}.${table}" | egrep -q "${schema}.*${table}"
       if [ $? -eq 0 ]; then
         # it's OK if we hit this a bunch, right?
-        COLS=`${PSQL_CMD} -c "\\copy (select * from ${table} limit 1) TO STDOUT CSV HEADER" | head -1 | sed -e 's/^gid,//' -e 's/,/","/g'`
+        COLS=`${PSQL_CMD} -c "\\copy (select * from ${schema}.${table} limit 1) TO STDOUT CSV HEADER" | head -1 | sed -e 's/^gid,//' -e 's/,/","/g'`
         COLS="\"$COLS\""
         VIEW="${VIEW} SELECT ${COLS} from $schema.$table UNION ALL "
-        cat<<EOT | ${PSQL_CMD_NULL}
-          DROP TABLE IF EXISTS ${table} cascade;
-          CREATE TABLE ${table} (like $schema.$table including indexes including constraints);
-EOT
+#        cat<<EOT | ${PSQL_CMD_NULL}
+#          DROP TABLE IF EXISTS ${table} cascade;
+#          CREATE TABLE ${table} (like $schema.$table including indexes including constraints);
+#EOT
       fi
     done
     VIEW=`echo $VIEW| sed -e 's/UNION ALL *$/;/'`
+    note creating view public.${table}
     cat<<EOT | ${PSQL_CMD_NULL}
-    drop sequence if exists ${table}_gid_seq; create sequence ${table}_gid_seq;
-    alter table ${table} drop constraint ${table}_statefp_check;
-    alter table ${table} alter column gid set default nextval('${table}_gid_seq'::regclass);
-    insert into ${table} (${COLS}) ${VIEW};
+    --drop sequence if exists ${table}_gid_seq; create sequence ${table}_gid_seq;
+    --alter table ${table} drop constraint ${table}_statefp_check;
+    --alter table ${table} alter column gid set default nextval('${table}_gid_seq'::regclass);
+    drop view if exists ${table} cascade;
+    create view ${table} (${COLS}) AS ${VIEW};
 EOT
       TYPE=`${PSQL_CMD} -t -c "select type from geometry_columns where f_table_name='${table}' limit 1" | egrep '(POLY|LINE)'| sed 's/ //g'`
 

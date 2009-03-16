@@ -1,3 +1,4 @@
+set search_path=public,tiger;
 CREATE OR REPLACE FUNCTION geocode(
     input VARCHAR,
     OUT ADDY NORM_ADDY,

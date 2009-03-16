@@ -1,3 +1,12 @@
+set search_path=public,tiger;
+DROP AGGREGATE array_accum(anyelement);
+CREATE AGGREGATE array_accum (anyelement)
+(
+    sfunc = array_append,
+    stype = anyarray,
+    initcond = '{}'
+);
+
 -- geocode(cursor, address, directionPrefix, streetName,
 -- streetTypeAbbreviation, directionSuffix, location, stateAbbreviation,
 -- zipCode)
@@ -37,11 +46,11 @@ BEGIN
     SELECT statefp,location,zip,column1 as exact,min(pref) FROM
     (SELECT zip_state.statefp as statefp,parsed.location as location,ARRAY[zip_state.zip] as zip,1 as pref
         FROM zip_state WHERE zip_state.zip = parsed.zip AND (in_statefp IS NULL OR zip_state.statefp = in_statefp)
-      UNION SELECT zip_state_loc.statefp,parsed.location,array_accum(zip_state_loc.zip),2
-              FROM zip_state_loc
-             WHERE zip_state_loc.statefp = in_statefp
-                   AND soundex(parsed.location) = soundex(zip_state_loc.place)
-             GROUP BY zip_state_loc.statefp,parsed.location
+      UNION SELECT zip_state.statefp,parsed.location,array_accum(zip_state.zip),2
+              FROM zip_state
+             WHERE zip_state.statefp = in_statefp
+                   AND soundex(parsed.location) = soundex(zip_state.place)
+             GROUP BY zip_state.statefp,parsed.location
       UNION SELECT zip_lookup_base.statefp,parsed.location,array_accum(zip_lookup_base.zip),3
               FROM zip_lookup_base
              WHERE zip_lookup_base.statefp = in_statefp
@@ -106,17 +115,16 @@ BEGIN
          || '    ) AS sub'
          || '  JOIN edges e ON (' || quote_literal(zip_info.statefp) || ' = e.statefp AND sub.tlid = e.tlid)'
          || '  JOIN state s ON (' || quote_literal(zip_info.statefp) || ' = s.statefp)'
-         || '  JOIN faces f ON (' || quote_literal(zip_info.statefp) || ' = f.statefp AND (e.tfidl = f.tlid OR e.tfidr = f.tlid))'
+         || '  JOIN faces f ON (' || quote_literal(zip_info.statefp) || ' = f.statefp AND (e.tfidl = f.tfid OR e.tfidr = f.tfid))'
          || '  LEFT JOIN zip_lookup_base zip ON (sub.zip = zip.zip)'
          || '  LEFT JOIN place p ON (' || quote_literal(zip_info.statefp) || ' = p.statefp AND f.placefp = p.placefp)'
          || '  LEFT JOIN county co ON (' || quote_literal(zip_info.statefp) || ' = co.statefp AND f.countyfp = co.countyfp)'
          || '  LEFT JOIN cousub cs ON (' || quote_literal(zip_info.statefp) || ' = cs.statefp AND cs.cosbidfp = sub.statefp || co.countyfp || f.cousubfp)'
          || ' WHERE'
-         || '  (sub.side = ''L'' and e.tfidl = f.tlid) OR (sub.side = ''R'' and e.tfidr = f.tlid)'
+         || '  (sub.side = ''L'' and e.tfidl = f.tfid) OR (sub.side = ''R'' and e.tfidr = f.tfid)'
          || ' ORDER BY 1,2,3,4,5,6,7,9'
          || ' LIMIT 10'
          ;
-
     -- If we got an exact street match then when we hit the non-exact
     -- set of tests, just drop out.
     IF NOT zip_info.exact AND exact_street THEN
