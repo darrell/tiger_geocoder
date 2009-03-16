@@ -29,3 +29,9 @@ Remove all deprecated tables and views.
 
 Are we using addr.dbf and featnames.dbf to the full extent we should be?
 
+--
+
+Create a series of test addresses to verify against.
+
+
+
