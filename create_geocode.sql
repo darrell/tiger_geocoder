@@ -1,6 +1,6 @@
 -- Tiger is where we're going to create the functions, but we need
 -- the PostGIS functions/types which are in public.
-SET search_path TO public,tiger;
+SET search_path TO tiger,public;
 set client_min_messages=error;
 
 DROP schema if exists tiger cascade;
