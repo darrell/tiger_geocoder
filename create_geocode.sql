@@ -17,7 +17,7 @@ DROP TYPE IF EXISTS norm_addy CASCADE;
 CREATE TYPE norm_addy AS (
     address INTEGER,
     preDirAbbrev VARCHAR,
-    preTypAbbrev VARCHAR,
+    preTypeAbbrev VARCHAR,
     preQualAbbrev VARCHAR,
     streetName VARCHAR,
     streetTypeAbbrev VARCHAR,

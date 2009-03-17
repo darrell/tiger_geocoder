@@ -12,12 +12,18 @@ BEGIN
   result := cull_null(input.address::text)
          || CASE WHEN input.preDirAbbrev IS NOT NULL THEN ' ' ELSE '' END
          || cull_null(input.preDirAbbrev)
+         || CASE WHEN input.preTypeAbbrev IS NOT NULL THEN ' ' ELSE '' END
+         || cull_null(input.preTypeAbbrev)
+         || CASE WHEN input.preQualAbbrev IS NOT NULL THEN ' ' ELSE '' END
+         || cull_null(input.preQualAbbrev)
          || CASE WHEN input.streetName IS NOT NULL THEN ' ' ELSE '' END
          || cull_null(input.streetName)
          || CASE WHEN input.streetTypeAbbrev IS NOT NULL THEN ' ' ELSE '' END
          || cull_null(input.streetTypeAbbrev)
          || CASE WHEN input.streetDirAbbrev IS NOT NULL THEN ' ' ELSE '' END
          || cull_null(input.streetDirAbbrev)
+         || CASE WHEN input.streetQualAbbrev IS NOT NULL THEN ' ' ELSE '' END
+         || cull_null(input.streetQualAbbrev)
          || CASE WHEN
               input.address IS NOT NULL OR
               input.streetName IS NOT NULL
