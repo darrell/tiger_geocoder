@@ -184,6 +184,7 @@ function loadshp () {
   local CMD_EXTRAS=''
   local NEWFILE=''
   local TABLEACTION='-a'
+  local EXISTS='false'
 
   local DID_THIS_TABLE='false'
 
@@ -191,14 +192,22 @@ function loadshp () {
     DID_THIS_TABLE='true'
   fi
 
-  if    [ "$DROP" = "true" -a "${DID_THIS_TABLE}" = 'false' ]; then
+  ${PSQL_CMD} -t -c "\dt ${SCHEMA}.${TABLE}" | egrep -q "${SCHEMA} .* ${TABLE} "
+  if [ $? -eq 0 ]; then
+   EXISTS='true'
+  fi
+
+  if    [ "$DROP" = "true" -a "${DID_THIS_TABLE}" = 'false'  -a ${EXISTS} = "true" ]; then
     TABLEACTION="-d -c"
     note Loading ${FILE} into dropped and created ${SCHEMA}.${TABLE}
-  elif [ "${DID_THIS_TABLE}" = "true" -o  "$DROP" = "false" ]; then
+  elif [  ${EXISTS} = "true" -a \( "${DID_THIS_TABLE}" = "true" -o  "$DROP" = "false" \)  ]; then
     TABLEACTION="-a"
     note Appending ${FILE} into ${SCHEMA}.${TABLE}
-  else 
-    note Loading ${FILE} into new table ${SCHEMA}.${TABLE}
+  fi
+
+  if [ "${EXISTS}" = 'false' ]; then
+    TABLEACTION="-c"
+    note Creating and loading ${FILE} into new table ${SCHEMA}.${TABLE}
   fi
 
   PROCESSED_SHPS[${#PROCESSED_SHPS[*]}]="${SCHEMA}.${TABLE}"
@@ -216,22 +225,6 @@ function loadshp () {
     note "using reprojected file: ${NEWFILE}"
   fi
 
-   ${PSQL_CMD} -t -c "\dt ${SCHEMA}.${TABLE}" | egrep -q "${SCHEMA}.${TABLE}"
-   if [ $? -ne 0 ]; then
-    shp2pgsql \
-    -p \
-    -I  \
-    -s $SRID \
-    -W ${ENCODING} \
-    "${NEWFILE}" \
-    "${SCHEMA}.${TABLE}"\
-    ${CMD_EXTRAS} \
-    | (echo set client_min_messages=error\; ;cat -) \
-    | ${PSQL_CMD_NULL} \
-    | egrep -v '^(INSERT INTO|BEGIN;|END;)' # you really don't want to see a zillion insert statements
-    addcols "$SCHEMA" "$TABLE" 
-   fi
-
   
   shp2pgsql \
     ${TABLEACTION} \
@@ -246,43 +239,39 @@ function loadshp () {
     addcols "$SCHEMA" "$TABLE"
 }
 
-PROCESSED_DBFS
+PROCESSED_DBFS=()
 function loaddbf () {
   local FILE="$1"
   local TABLE="$2"
   local BASESHP=`basename $FILE .dbf`
   local TABLEACTION='-c'
-
+  local EXISTS='true'
   local DID_THIS_TABLE='false'
 
   if [[ ${PROCESSED_DBFS[*]} =~ "\b${SCHEMA}.${TABLE}\b" ]]; then
     DID_THIS_TABLE='true'
   fi
 
-  if   [ "$DROP" = "true" -a "${DID_THIS_TABLE}" = 'false' ]; then
+  ${PSQL_CMD} -t -c "\dt ${SCHEMA}.${TABLE}" | egrep -q "${SCHEMA} .* ${TABLE} "
+  if [ $? -ne 0 ]; then
+   EXISTS='false'
+  fi
+
+  if   [ "$DROP" = "true" -a "${DID_THIS_TABLE}" = 'false'  -a ${EXISTS} = "true" ]; then
     TABLEACTION="-d -c"
     note Loading ${FILE} into dropped and created ${SCHEMA}.${TABLE}
-  elif [ "${DID_THIS_TABLE}" = "true" -o  "$DROP" = "false" ]; then
+  elif [  ${EXISTS} = "true" -a \( "${DID_THIS_TABLE}" = "true" -o  "$DROP" = "false" \)  ]; then
     TABLEACTION="-a"
     note Appending ${FILE} into ${SCHEMA}.${TABLE}
-  else
-    note Loading ${FILE} into new table ${SCHEMA}.${TABLE}
+  fi
+
+  if [ "${EXISTS}" = 'false' ]; then
+    TABLEACTION="-c"
+    note Creating and loading ${FILE} into new table ${SCHEMA}.${TABLE}
   fi
 
   PROCESSED_DBFS[${#PROCESSED_DBFS[*]}]="${SCHEMA}.${TABLE}"
 
-  ${PSQL_CMD} -t -c "\dt ${SCHEMA}.${TABLE}" | egrep -q "${SCHEMA}.${TABLE}"
-  if [ $? -ne 0 ]; then
-  shp2pgsql \
-    -p \
-    -W ${ENCODING} \
-    -n \
-    "${FILE}" \
-    "${SCHEMA}.${TABLE}" \
-    | (echo set client_min_messages=error\; ;cat -) \
-    | ${PSQL_CMD_NULL} \
-    | egrep -v '^(INSERT INTO|BEGIN;|END;)' # you really don't want to see a zillion insert statements
-  fi
   shp2pgsql \
     ${TABLEACTION} \
     -W ${ENCODING} \
@@ -300,7 +289,9 @@ function create_schema () {
  local EXT=''
   if [ "${DROP_SCHEMA}" = "true" ]; then
     EXT="drop schema if exists $SCHEMA cascade;"
+    note dropping schema ${SCHEMA}
   fi
+  note "creating schema ${SCHEMA}"
   cat<<EOT  | (echo 'set client_min_messages=error;';cat -) | ${PSQL_CMD_NULL}
   $EXT
   create schema $SCHEMA;
