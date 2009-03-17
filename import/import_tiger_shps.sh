@@ -502,6 +502,7 @@ fi
 rm -rf ${TMPDIR}
 
 if [ "${DO_MERGE}" = 'true' ]; then
+  create_schema ${SCHEMA_PREFIX}
   MYSCHEMAS=`${PSQL_CMD} -t -c '\\dn' | egrep "^ +${SCHEMA_PREFIX}_[0-9u][0-9s]" | sed -e 's/|.*//'`
   TABLES=`(for schema in $MYSCHEMAS; do
     ${PSQL_CMD} -t -c "\\dt ${schema}."
@@ -512,7 +513,7 @@ if [ "${DO_MERGE}" = 'true' ]; then
     VIEW=''
     for schema in ${MYSCHEMAS}; do
       note "   Processing schema $schema..."
-      ${PSQL_CMD} -t -c "\dt ${schema}.${table}" | egrep -q "${schema}.${table}"
+      ${PSQL_CMD} -t -c "\dt ${schema}.${table}" | egrep -q "${schema} .* ${table} "
       if [ $? -eq 0 ]; then
         # it's OK if we hit this a bunch, right?
         COLS=`${PSQL_CMD} -c "\\copy (select * from ${schema}.${table} limit 1) TO STDOUT CSV HEADER" | head -1 | sed -e 's/^gid,//' -e 's/,/","/g'`
@@ -525,12 +526,13 @@ if [ "${DO_MERGE}" = 'true' ]; then
       fi
     done
     VIEW=`echo $VIEW| sed -e 's/UNION ALL *$/;/'`
-    note creating view public.${table}
+    note creating view ${SCHEMA_PREFIX}.${table}
     cat<<EOT | ${PSQL_CMD_NULL}
     --drop sequence if exists ${table}_gid_seq; create sequence ${table}_gid_seq;
     --alter table ${table} drop constraint ${table}_statefp_check;
     --alter table ${table} alter column gid set default nextval('${table}_gid_seq'::regclass);
     drop view if exists ${table} cascade;
+    --\set ECHO queries
     create view ${table} (${COLS}) AS ${VIEW};
 EOT
       TYPE=`${PSQL_CMD} -t -c "select type from geometry_columns where f_table_name='${table}' limit 1" | egrep '(POLY|LINE)'| sed 's/ //g'`
@@ -540,9 +542,9 @@ EOT
       else
         echo ${TYPE} > /dev/null
         cat<<EOT | ${PSQL_CMD_NULL}
-        --create index ${table}_the_geom_idx on public.${table} using gist(the_geom gist_geometry_ops);
-        delete from geometry_columns where f_table_name='${table}' and f_table_schema='public';
-        insert into geometry_columns values ('','public','${table}','the_geom',2,${SRID},'${TYPE}');
+        --create index ${table}_the_geom_idx on ${SCHEMA_PREFIX}.${table} using gist(the_geom gist_geometry_ops);
+        delete from geometry_columns where f_table_name='${table}' and f_table_schema='${SCHEMA_PREFIX}';
+        insert into geometry_columns values ('','${SCHEMA_PREFIX}','${table}','the_geom',2,${SRID},'${TYPE}');
 EOT
       fi  
   done
