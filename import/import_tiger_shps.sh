@@ -176,18 +176,33 @@ function addcols () {
   
 }
 
+PROCESSED_SHPS=()
 function loadshp () {
   local FILE="$1"
   local TABLE="$2"
   local BASESHP=`basename $FILE .shp`
-  local DROPTBL=""
   local CMD_EXTRAS=''
   local NEWFILE=''
-  
-  if [ "$DROP" = "true" ]; then
-    DROPTBL="-d"
+  local TABLEACTION='-a'
+
+  local DID_THIS_TABLE='false'
+
+  if [[ ${PROCESSED_SHPS[*]} =~ "\b${SCHEMA}.${TABLE}\b" ]]; then
+    DID_THIS_TABLE='true'
   fi
-  note Loading ${FILE} into ${SCHEMA}.${TABLE}
+
+  if    [ "$DROP" = "true" -a "${DID_THIS_TABLE}" = 'false' ]; then
+    TABLEACTION="-d -c"
+    note Loading ${FILE} into dropped and created ${SCHEMA}.${TABLE}
+  elif [ "${DID_THIS_TABLE}" = "true" -o  "$DROP" = "false" ]; then
+    TABLEACTION="-a"
+    note Appending ${FILE} into ${SCHEMA}.${TABLE}
+  else 
+    note Loading ${FILE} into new table ${SCHEMA}.${TABLE}
+  fi
+
+  PROCESSED_SHPS[${#PROCESSED_SHPS[*]}]="${SCHEMA}.${TABLE}"
+
   if [ "${DEBUG}" = 'true' ]; then
     :
   else
@@ -200,9 +215,26 @@ function loadshp () {
     reproject "${FILE}" ${SRID}
     note "using reprojected file: ${NEWFILE}"
   fi
-  shp2pgsql \
-    $DROPTBL \
+
+   ${PSQL_CMD} -t -c "\dt ${SCHEMA}.${TABLE}" | egrep -q "${SCHEMA}.${TABLE}"
+   if [ $? -ne 0 ]; then
+    shp2pgsql \
+    -p \
     -I  \
+    -s $SRID \
+    -W ${ENCODING} \
+    "${NEWFILE}" \
+    "${SCHEMA}.${TABLE}"\
+    ${CMD_EXTRAS} \
+    | (echo set client_min_messages=error\; ;cat -) \
+    | ${PSQL_CMD_NULL} \
+    | egrep -v '^(INSERT INTO|BEGIN;|END;)' # you really don't want to see a zillion insert statements
+    addcols "$SCHEMA" "$TABLE" 
+   fi
+
+  
+  shp2pgsql \
+    ${TABLEACTION} \
     -s $SRID \
     -W ${ENCODING} \
     "${NEWFILE}" \
@@ -214,17 +246,45 @@ function loadshp () {
     addcols "$SCHEMA" "$TABLE"
 }
 
+PROCESSED_DBFS
 function loaddbf () {
   local FILE="$1"
   local TABLE="$2"
   local BASESHP=`basename $FILE .dbf`
-  local DROPTBL=""
-  if [ "$DROP" = "true" ]; then
-    DROPTBL="-d"
+  local TABLEACTION='-c'
+
+  local DID_THIS_TABLE='false'
+
+  if [[ ${PROCESSED_DBFS[*]} =~ "\b${SCHEMA}.${TABLE}\b" ]]; then
+    DID_THIS_TABLE='true'
   fi
-  note Loading ${FILE} into ${SCHEMA}.${TABLE}
+
+  if   [ "$DROP" = "true" -a "${DID_THIS_TABLE}" = 'false' ]; then
+    TABLEACTION="-d -c"
+    note Loading ${FILE} into dropped and created ${SCHEMA}.${TABLE}
+  elif [ "${DID_THIS_TABLE}" = "true" -o  "$DROP" = "false" ]; then
+    TABLEACTION="-a"
+    note Appending ${FILE} into ${SCHEMA}.${TABLE}
+  else
+    note Loading ${FILE} into new table ${SCHEMA}.${TABLE}
+  fi
+
+  PROCESSED_DBFS[${#PROCESSED_DBFS[*]}]="${SCHEMA}.${TABLE}"
+
+  ${PSQL_CMD} -t -c "\dt ${SCHEMA}.${TABLE}" | egrep -q "${SCHEMA}.${TABLE}"
+  if [ $? -ne 0 ]; then
   shp2pgsql \
-    $DROPTBL \
+    -p \
+    -W ${ENCODING} \
+    -n \
+    "${FILE}" \
+    "${SCHEMA}.${TABLE}" \
+    | (echo set client_min_messages=error\; ;cat -) \
+    | ${PSQL_CMD_NULL} \
+    | egrep -v '^(INSERT INTO|BEGIN;|END;)' # you really don't want to see a zillion insert statements
+  fi
+  shp2pgsql \
+    ${TABLEACTION} \
     -W ${ENCODING} \
     -n \
     "${FILE}" \
@@ -457,7 +517,7 @@ if [ "${DO_MERGE}" = 'true' ]; then
     VIEW=''
     for schema in ${MYSCHEMAS}; do
       note "   Processing schema $schema..."
-      ${PSQL_CMD} -t -c "\dt ${schema}.${table}" | egrep -q "${schema}.*${table}"
+      ${PSQL_CMD} -t -c "\dt ${schema}.${table}" | egrep -q "${schema}.${table}"
       if [ $? -eq 0 ]; then
         # it's OK if we hit this a bunch, right?
         COLS=`${PSQL_CMD} -c "\\copy (select * from ${schema}.${table} limit 1) TO STDOUT CSV HEADER" | head -1 | sed -e 's/^gid,//' -e 's/,/","/g'`
