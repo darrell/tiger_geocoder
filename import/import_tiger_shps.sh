@@ -416,7 +416,7 @@ if [ "$STATELVL" = "true"  -o "${COUNTLVL}" = 'true' ]; then
       note ""
       note "Processing county-level for $STATE..."
       CODIRS="$statedir/${STATE}${COUNTIES}_*"
-      if [ -z ${CODIRS} ]; then
+      if [ -z "${CODIRS}" ]; then
         error "$statedir/${STATE}${COUNTIES}_\* did not match anything!"
       fi
       for codir in ${CODIRS}; do
