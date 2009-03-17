@@ -82,6 +82,11 @@ DROP_SCHEMA="false"
 DEBUG='false'
 QUIET='false'
 
+# create index on these fields
+INDEXES=(statefp countyfp cousubfp name street fullstreet arid tlid linearid)
+
+# these fields get indexes
+
 function table_from_filename () {
   local FILE="$1"
   TBL=`basename $FILE .shp`
@@ -316,6 +321,9 @@ function usage () {
                    (default: all state and county-level files)
                    setting this to 'none' skips loading of county level files.
 
+  -I               (Re)create indexes for columns.
+                   (default: ${INDEXES
+
   -X                Drop schemas before loading the data.
                     Tables will not be dropped individually, since they will 
                     be dropped with the schema.
@@ -347,7 +355,7 @@ EOT
   exit 1;
 }
 
-while getopts  "n:s:c:H:u:d:DB:b:E:S:hvXr:R:qp:iM" flag; do
+while getopts  "n:s:c:H:u:d:DB:b:E:S:hvXr:R:qp:iMI" flag; do
   case "$flag" in
     n)  NATIONAL="true"; NATLAYERS="$OPTARG";;
     s)  STATELVL="true"; STATES="$OPTARG";;
@@ -356,6 +364,7 @@ while getopts  "n:s:c:H:u:d:DB:b:E:S:hvXr:R:qp:iM" flag; do
     u)  DBUSER="$OPTARG";;
     d)  DB="$OPTARG";;
     D)  DROP="true";;
+    I)  CREATE_INDEXES="true";;
     p)  DBPORT="$OPTARGS";;
     X)  DROP_SCHEMA="true";;
     B)  BASE="$OPTARG";;
@@ -372,7 +381,7 @@ while getopts  "n:s:c:H:u:d:DB:b:E:S:hvXr:R:qp:iM" flag; do
     [?]) usage ;;
   esac
 done
-if [ "${DO_MERGE}" = 'true' ]; then
+if [ "${DO_MERGE}" = 'true' -o "${CREATE_INDEXES}" = 'true' ]; then
   NATIONAL='false'
   STATELVL='false'
   COUNTYLVL='false'
@@ -547,5 +556,26 @@ EOT
         insert into geometry_columns values ('','${SCHEMA_PREFIX}','${table}','the_geom',2,${SRID},'${TYPE}');
 EOT
       fi  
+  done
+fi
+
+if [ "${CREATE_INDEXES}" = 'true' ]; then
+  MYSCHEMAS=`${PSQL_CMD} -t -c '\\dn' | egrep "^ +${SCHEMA_PREFIX}_[0-9u][0-9s]" | sed -e 's/|.*//'`
+  for schema in ${MYSCHEMAS}; do
+   TABLES=`${PSQL_CMD} -t -c "\\dt ${schema}." |cut -d\| -f 2 | sort -u`
+
+   for table in ${TABLES}; do
+     COLS=`${PSQL_CMD} -t -c "\\d ${schema}.${table}" | cut -d\| -f 1 | sort -u`
+     for column in ${COLS}; do
+       if [[ ${INDEXES[*]} =~ "\b${column}\b" ]]; then
+        idx="${table}_${column}_idx"
+        note creating index ${schema}.${idx}
+        cat<<EOT | ${PSQL_CMD_NULL}
+        DROP INDEX IF EXISTS  ${schema}.${idx} ;
+        CREATE INDEX ${idx} on  ${schema}.${table} using btree(${column});
+EOT
+       fi
+     done
+   done
   done
 fi
