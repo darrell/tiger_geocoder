@@ -87,11 +87,7 @@ VALUES ('Ohio', 'OH', '39');
 INSERT INTO state_lookup (name, abbrev, statefp)
 VALUES ('Oklahoma', 'OK', '40');
 INSERT INTO state_lookup (name, abbrev, statefp)
-VALUES (
-							 'Oregon', '
-						OR '
-						 , '41'
-       );
+VALUES ( 'Oregon', 'OR' , '41');
 INSERT INTO state_lookup (name, abbrev, statefp)
 VALUES ('Palau', 'PW', -5);
 INSERT INTO state_lookup (name, abbrev, statefp)
