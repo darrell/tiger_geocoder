@@ -80,7 +80,7 @@ BEGIN
          || ' FROM ('
          || '  SELECT tlid, predirabrv, name, suftypabrv, sufdirabrv, fromhn, tohn, side, statefp, zip, rate_attributes(' || coalesce(quote_literal(parsed.preDirAbbrev),'NULL') || ', a.predirabrv,'
          || '    ' || coalesce(quote_literal(parsed.streetName),'NULL') || ', a.name, ' || coalesce(quote_literal(parsed.streetTypeAbbrev),'NULL') || ','
-         || '    a.suftypabrv, ' || coalesce(quote_literal(parsed.postDirAbbrev),'NULL') || ','
+         || '    a.suftypabrv, ' || coalesce(quote_literal(parsed.streetDirAbbrev),'NULL') || ','
          || '    a.sufdirabrv) + '
          || '    CASE '
          || '        WHEN ' || coalesce(quote_literal(parsed.address),'NULL') || ' IS NULL OR b.fromhn IS NULL THEN 20'
@@ -133,6 +133,8 @@ BEGIN
 
     FOR results IN EXECUTE stmt LOOP
 
+       RAISE DEBUG 'stmt: %', stmt;
+
       -- If we found a match with an exact street, then don't bother
       -- trying to do non-exact matches
       IF zip_info.exact THEN
@@ -148,7 +150,7 @@ BEGIN
       ADDY.preDirAbbrev     := results.fedirp;
       ADDY.streetName       := results.fename;
       ADDY.streetTypeAbbrev := results.fetype;
-      ADDY.postDirAbbrev    := results.fedirs;
+      ADDY.streetDirAbbrev    := results.fedirs;
       ADDY.location         := results.place;
       ADDY.stateAbbrev      := results.state;
       ADDY.zip              := results.zip;

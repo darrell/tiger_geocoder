@@ -7,13 +7,22 @@ DROP schema if exists tiger cascade;
 create schema tiger;
 
 -- Type used to pass around a normalized address between functions
+-- Note census defines a street name as: 
+-- "Concatenation of expanded text for prefix qualifier, prefix 
+-- direction, prefix type, base name, suffix type, suffix 
+-- direction, and suffix qualifier with a space between each 
+-- expanded text field "
+
 DROP TYPE IF EXISTS norm_addy CASCADE;
 CREATE TYPE norm_addy AS (
     address INTEGER,
     preDirAbbrev VARCHAR,
+    preTypAbbrev VARCHAR,
+    preQualAbbrev VARCHAR,
     streetName VARCHAR,
     streetTypeAbbrev VARCHAR,
-    postDirAbbrev VARCHAR,
+    streetDirAbbrev VARCHAR,
+    streetQualAbbrev VARCHAR,
     internal VARCHAR,
     location VARCHAR,
     stateAbbrev VARCHAR,

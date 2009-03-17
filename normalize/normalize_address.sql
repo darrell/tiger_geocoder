@@ -347,7 +347,7 @@ BEGIN
           || name || ws) ORDER BY length(name) desc;
       IF rec.value IS NOT NULL THEN
         postDir := rec.value;
-        result.postDirAbbrev := rec.abbrev;
+        result.streetDirAbbrev := rec.abbrev;
       END IF;
       result.location := null;
     ELSIF result.internal IS NULL THEN
@@ -356,7 +356,7 @@ BEGIN
           upper(result.location) = upper(name);
       IF tempInt != 0 THEN
         postDir := result.location;
-        SELECT INTO result.postDirAbbrev abbrev FROM direction_lookup WHERE
+        SELECT INTO result.streetDirAbbrev abbrev FROM direction_lookup WHERE
             upper(postDir) = upper(name);
         result.location := NULL;
       ELSE
@@ -367,7 +367,7 @@ BEGIN
             ORDER BY length(name) desc;
         IF tempString IS NOT NULL THEN
           postDir := tempString;
-          SELECT INTO result.postDirAbbrev abbrev FROM direction_lookup
+          SELECT INTO result.streetDirAbbrev abbrev FROM direction_lookup
               where texticregexeq(result.location, '(?i)(^' || name || ')' || ws);
           result.location := substring(result.location, '^' || postDir || ws || '+(.*)');
         END IF;
@@ -381,7 +381,7 @@ BEGIN
           || ws || name || ws || '+' || result.internal) ORDER BY length(name) desc;
       IF tempString IS NOT NULL THEN
         postDir := tempString;
-        SELECT INTO result.postDirAbbrev abbrev FROM direction_lookup
+        SELECT INTO result.streetDirAbbrev abbrev FROM direction_lookup
             WHERE texticregexeq(fullStreet, '(?i)' || ws || name || ws);
       END IF;
     END IF;
@@ -399,7 +399,7 @@ BEGIN
         postDir := substring(reducedStreet, '(?i)' || ws || '('
             || name || ')' || '$') FROM direction_lookup
             WHERE texticregexeq(reducedStreet, '(?i)' || ws || name || '$');
-        result.postDirAbbrev := abbrev FROM direction_lookup
+        result.streetDirAbbrev := abbrev FROM direction_lookup
             WHERE texticregexeq(reducedStreet, '(?i)' || ws || name || '$');
       END IF;
       tempString := substring(reducedStreet, '(?i)^(' || name
@@ -431,7 +431,7 @@ BEGIN
             || name || ')(?:' || ws || '|$)') FROM direction_lookup WHERE
             texticregexeq(fullStreet, '(?i)' || ws || name || '(?:'
             || ws || '|$)');
-        result.postDirAbbrev := abbrev FROM direction_lookup
+        result.streetDirAbbrev := abbrev FROM direction_lookup
             WHERE texticregexeq(fullStreet, '(?i)' || ws || name
             || '(?:' || ws || '|$)');
         IF result.location IS NULL THEN
@@ -475,11 +475,11 @@ BEGIN
             IF postDir IS NULL THEN
               tempInt := position(rec.value in fullStreet);
               postDir := rec.value;
-              result.postDirAbbrev := rec.abbrev;
+              result.streetDirAbbrev := rec.abbrev;
             ELSIF NOT texticregexeq(postDir, '(?i)' || rec.value) THEN
               tempInt := position(rec.value in fullStreet);
               postDir := rec.value;
-              result.postDirAbbrev := rec.abbrev;
+              result.streetDirAbbrev := rec.abbrev;
              END IF;
           END IF;
         END LOOP;

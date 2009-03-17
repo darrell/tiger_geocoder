@@ -16,8 +16,8 @@ BEGIN
          || cull_null(input.streetName)
          || CASE WHEN input.streetTypeAbbrev IS NOT NULL THEN ' ' ELSE '' END
          || cull_null(input.streetTypeAbbrev)
-         || CASE WHEN input.postDirAbbrev IS NOT NULL THEN ' ' ELSE '' END
-         || cull_null(input.postDirAbbrev)
+         || CASE WHEN input.streetDirAbbrev IS NOT NULL THEN ' ' ELSE '' END
+         || cull_null(input.streetDirAbbrev)
          || CASE WHEN
               input.address IS NOT NULL OR
               input.streetName IS NOT NULL
