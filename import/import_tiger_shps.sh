@@ -310,6 +310,9 @@ EOT
 function usage () {
   cat >&2 <<EOT  
   -q               Be quieter (shp2pgsql does not always cooperate here)
+
+  -M               Merge all tables into appropriate views (implies no other data is loaded)
+
   -n  glob         Load national-level data matching pattern 
                    (use 'all' to match, well all)
                    (default: skip national data)
@@ -341,6 +344,7 @@ function usage () {
                    then reproject to this SRID before import. (requires ogr2ogr be installed)
 
   -0               Include files matching *00.shp,i.e. files from 2000. (default: exclude shapes ending in 00)
+
   Uncommon options:
 
   -b  file_prefix  String that matches the beginning of individual tiger files (default: tl_2008)
