@@ -7,3 +7,4 @@ set search_path=public,tiger;
 -- Normalization API, called by geocode mainly.
 \i normalize_address.sql
 \i pprint_addy.sql
+\i address_variants.sql

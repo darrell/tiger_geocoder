@@ -38,6 +38,7 @@ CREATE TYPE norm_addy AS (
 \i cull_null.sql
 \i nullable_levenshtein.sql
 \i levenshtein_ignore_case.sql
+\i array_helpers.sql
 
 ---- Address normalizer
 -- General helpers
