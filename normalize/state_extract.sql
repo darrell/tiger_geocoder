@@ -7,13 +7,13 @@
 --
 -- The result is the state as given in the input string, and the approved
 -- state abbreviation, seperated by a colon.
-CREATE OR REPLACE FUNCTION state_extract(rawInput VARCHAR) RETURNS VARCHAR
+CREATE OR REPLACE FUNCTION state_extract(rawInput VARCHAR, OUT state text, OUT stateAbbrev text) 
+RETURNS record
 AS $_$
 DECLARE
   tempInt INTEGER;
   tempString VARCHAR;
-  state VARCHAR;
-  stateAbbrev VARCHAR;
+  tempRec record;
   result VARCHAR;
   rec RECORD;
   test BOOLEAN;
@@ -24,31 +24,52 @@ BEGIN
   -- Separate out the last word of the state, and use it to compare to
   -- the state lookup table to determine the entire name, as well as the
   -- abbreviation associated with it.  The zip code may or may not have
-  -- been found.
-  tempString := substring(rawInput from ws || E'+([^ ,.\t\n\f\r0-9]*?)$');
-  SELECT INTO tempInt count(*) FROM (select distinct abbrev from state_lookup
-      WHERE upper(abbrev) = upper(tempString)) as blah;
-  IF tempInt = 1 THEN
-    state := tempString;
-    SELECT INTO stateAbbrev abbrev FROM (select distinct abbrev from
-        state_lookup WHERE upper(abbrev) = upper(tempString)) as blah;
-  ELSE
-    SELECT INTO tempInt count(*) FROM state_lookup WHERE upper(name)
-        like upper('%' || tempString);
+  -- been found, so strip off things that are not the state
+  --tempString := rtrim(rawInput, E' ,\t\n\f\r0123456789-');
+  --tempString := substring(tempString from E'[^ ,\t\n\f\r0123456789-]*?$');
+  
+  tempString := rawInput;
+  -- first look for exact match
+  raise DEBUG 'state_lookup: tempString: %', tempString;
+  SELECT INTO tempRec abbrev,name,count(*) FROM state_lookup
+    WHERE tempString ilike abbrev
+       OR tempString ilike gpoabbrev
+       OR tempString ilike altabbrev
+       GROUP BY abbrev,name;
+  IF tempRec.count = 1 THEN
+    raise debug 'state_lookup: found exact match on tempString: %', tempString;
+    stateAbbrev := upper(tempRec.abbrev);
+    -- preserve the string we were passed.
+    state:=tempString;
+  END IF;
+
+  -- no exact match. this is a rather complicated way to
+  -- match on possible multi-word state names(?)
+  IF stateAbbrev IS NULL THEN
+    SELECT INTO tempInt count(*) 
+       FROM state_lookup 
+      WHERE name ilike '%' || tempString;
     IF tempInt >= 1 THEN
-      FOR rec IN SELECT name from state_lookup WHERE upper(name)
-          like upper('%' || tempString) LOOP
-        SELECT INTO test texticregexeq(rawInput, name) FROM state_lookup
-            WHERE rec.name = name;
+      FOR rec IN SELECT name,abbrev
+                 FROM state_lookup
+                 WHERE name ilike '%' || tempString LOOP
+        SELECT INTO test rawInput ~* name 
+           FROM  state_lookup
+          WHERE  rec.name = name;
+        raise debug 'state_lookup: test: %,rec.name: %', test,rec.name;
         IF test THEN
-          SELECT INTO stateAbbrev abbrev FROM state_lookup
-              WHERE rec.name = name;
+          stateAbbrev=rec.abbrev;
+          -- save the returned string so we can strip it from
+          -- our input back in normalize_address
           state := substring(rawInput, '(?i)' || rec.name);
           EXIT;
         END IF;
       END LOOP;
-    ELSE
-      -- No direct match for state, so perform fuzzy match.
+    END IF;
+  END IF;
+
+  -- No direct match for state name, so perform fuzzy match.
+  IF stateAbbrev IS NULL THEN
       SELECT INTO tempInt count(*) FROM state_lookup
           WHERE soundex(tempString) = end_soundex(name);
       IF tempInt >= 1 THEN
@@ -69,14 +90,10 @@ BEGIN
             EXIT;
           END IF;
         END LOOP;
-      END IF;
     END IF;
   END IF;
 
-  IF state IS NOT NULL AND stateAbbrev IS NOT NULL THEN
-    result := state || ':' || stateAbbrev;
-  END IF;
-
-  RETURN result;
+  RAISE DEBUG 'state_lookup returning state: %, stateAbbrev: %', state,stateAbbrev;
+  RETURN;
 END;
 $_$ LANGUAGE plpgsql;
