@@ -71,16 +71,16 @@ BEGIN
   -- No direct match for state name, so perform fuzzy match.
   IF stateAbbrev IS NULL THEN
       SELECT INTO tempInt count(*) FROM state_lookup
-          WHERE soundex(tempString) = end_soundex(name);
+          WHERE dmetaphone(tempString) = end_dmetaphone(name);
       IF tempInt >= 1 THEN
         FOR rec IN SELECT name, abbrev FROM state_lookup
-            WHERE soundex(tempString) = end_soundex(name) LOOP
+            WHERE dmetaphone(tempString) = end_dmetaphone(name) LOOP
           tempInt := count_words(rec.name);
           tempString := get_last_words(rawInput, tempInt);
           test := TRUE;
           FOR i IN 1..tempInt LOOP
-            IF soundex(split_part(tempString, ' ', i)) !=
-               soundex(split_part(rec.name, ' ', i)) THEN
+            IF dmetaphone(split_part(tempString, ' ', i)) !=
+               dmetaphone(split_part(rec.name, ' ', i)) THEN
               test := FALSE;
             END IF;
           END LOOP;
