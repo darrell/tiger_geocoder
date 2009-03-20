@@ -43,6 +43,10 @@ County:
   tl_2008_XXYYY_addr.zip
   tl_2008_XXYYY_addrfn.zip
 
+If you want better address normalization in areas you do not intend to geocode,
+then it would probably behoove you to get the tl_2008_XX_place.zip for
+all states.
+
 There is a script included to load and prepare TIGER shapefiles.
 ***IT DOES NOT WORK WITH postgis 1.3.5. See below.****
 
