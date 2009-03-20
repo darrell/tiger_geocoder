@@ -179,8 +179,6 @@ FLTS	Flts
 FORD	Frd
 FRD	Frd
 FORDS	Frds
-FOREST	Frst
-FORESTS	Frst
 FRST	Frst
 FORG	Frg
 FORGE	Frg
@@ -339,9 +337,6 @@ MNTNS	Mtns
 MOUNTAINS	Mtns
 NCK	Nck
 NECK	Nck
-ORCH	Orch
-ORCHARD	Orch
-ORCHRD	Orch
 OVAL	Oval
 OVL	Oval
 OVERPASS	Opas
@@ -419,7 +414,6 @@ RD	Rd
 ROAD	Rd
 RDS	Rds
 ROADS	Rds
-ROUTE	Rte
 ROW	Row
 RUE	Rue
 RUN	Run
@@ -451,6 +445,16 @@ SQU	Sq
 SQUARE	Sq
 SQRS	Sqs
 SQUARES	Sqs
+STATE HIGHWAY	State Hwy
+ST HIGHWAY	State Hwy
+ST. HIGHWAY	State Hwy
+STATE HWY	State Hwy
+ST HWY	State Hwy
+ST. HWY	State Hwy
+STATE RTE	State Rte
+STATE ROUTE	State Rte
+ST RTE	State Hwy
+ST. ROUTE	State Hwy
 STA	Sta
 STATION	Sta
 STATN	Sta
@@ -508,7 +512,7 @@ TURNPIKE	Tpke
 TURNPK	Tpke
 UNDERPASS	Upas
 UN	Un
-\n\t\t\t\t UNION 	Un
+UNION 	Un
 UNIONS	Uns
 VALLEY	Vly
 VALLY	Vly
@@ -576,6 +580,7 @@ OPAS	Opas
 PSGE	Psge
 PNE	Pne
 RTE	Rte
+ROUTE	Rte
 SKWY	Skwy
 SQS	Sqs
 STS	Sts
@@ -585,3 +590,8 @@ UNS	Uns
 WL	Wl
 \.
 CREATE INDEX street_type_lookup_abbrev_idx ON street_type_lookup USING btree (abbrev);
+--FORESTS	Frst
+--FOREST	Frst
+--ORCH	Orch
+--ORCHARD	Orch
+--ORCHRD	Orch

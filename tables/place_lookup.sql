@@ -2,11 +2,7 @@
    set client_min_messages = error;
   DROP TABLE IF EXISTS place_lookup cascade;
 CREATE TABLE
-       place_lookup (
-							 statefp VARCHAR(2), state VARCHAR(2), placefp VARCHAR(5), name VARCHAR(90), PRIMARY
-							 KEY (statefp, placefp)
-       );
-INSERT INTO place_lookup
+       place_lookup AS
 SELECT pl.statefp as statefp
      , sl.abbrev as state
      , pl.placefp as placefp
@@ -18,7 +14,9 @@ SELECT pl.statefp as statefp
      , sl.abbrev
      , pl.placefp
      , pl.name;
+CREATE INDEX place_lookup_metaphonename_idx
+    ON place_lookup using btree(metaphone(name,6));
 CREATE INDEX place_lookup_name_idx
-    ON place_lookup (soundex(name));
+    ON place_lookup using btree(name);
 CREATE INDEX place_lookup_state_idx
-    ON place_lookup (state);
+    ON place_lookup using btree(state);
