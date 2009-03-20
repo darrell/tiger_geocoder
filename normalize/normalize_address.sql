@@ -62,500 +62,441 @@ DECLARE
   zipString VARCHAR;
   preDir VARCHAR;
   postDir VARCHAR;
-  fullStreet VARCHAR;
   reducedStreet VARCHAR;
   streetType VARCHAR;
-  state VARCHAR;
+  stateString VARCHAR;
   tempString VARCHAR;
+  tempString2 VARCHAR;
   tempInt INTEGER;
   rec RECORD;
+  locationString TEXT;
   ws VARCHAR;
   rawInput VARCHAR;
+  addrArray TEXT[];
+  addrMatches TEXT[];
+  streetElements TEXT[];
+  addrArrayLen integer;
+  stmt VARCHAR;
+  stateExists boolean:= false;
+  matchedSuffix boolean;
+  matchedInternal boolean := false;
 BEGIN
   result.parsed := FALSE;
-
+  debug_flag := true;
   rawInput := trim(in_rawInput);
 
   IF rawInput IS NULL THEN
     RETURN result;
   END IF;
 
-  ws := E'[ ,.\t\n\f\r]';
+  ws := E'[ ,\t\n\f\r^]';
 
   IF debug_flag THEN
     raise notice 'input: %', rawInput;
   END IF;
 
-  -- Assume that the address begins with a digit, and extract it from
-  -- the input string.
-  addressString := substring(rawInput from '^([0-9].*?)[ ,/.]');
 
-  IF debug_flag THEN
-    raise notice 'addressString: %', addressString;
+  addrArray:=array_compact(regexp_split_to_array(rawInput,ws||'+'));
+  addrArrayLen:=array_upper(addrArray,1);
+  
+  raise DEBUG 'split gives: %',addrArray ;
+
+  -- Assume that the house number begins with a digit, and extract it from
+  -- the first element. This does break some rurual addresses, which
+  -- may not start with a digit.
+  IF addrArray[1] ~ E'^\\d' THEN
+    addressString := addrArray[1];
+    addrArray:=addrArray[2:addrArrayLen];
+    addrArrayLen:=addrArrayLen-1;
+    raise DEBUG 'addrArray after address is now: %',addrArray ;
   END IF;
+  raise DEBUG 'addressString: %', addressString;
 
   -- There are two formats for zip code, the normal 5 digit, and
   -- the nine digit zip-4.  It may also not exist.
-  zipString := substring(rawInput from ws || '([0-9]{5})$');
-  IF zipString IS NULL THEN
-    zipString := substring(rawInput from ws || '([0-9]{5})-[0-9]{4}$');
-    -- Check if all we got was a zipcode, of either form
-    IF zipString IS NULL THEN
-      zipString := substring(rawInput from '^([0-9]{5})$');
-      IF zipString IS NULL THEN
-        zipString := substring(rawInput from '^([0-9]{5})-[0-9]{4}$');
-      END IF;
-      -- If it was only a zipcode, then just return it.
-      IF zipString IS NOT NULL THEN
-        result.zip := zipString;
-        result.parsed := TRUE;
-        RETURN result;
-      END IF;
-    END IF;
-  END IF;
-
-  IF debug_flag THEN
-    raise notice 'zipString: %', zipString;
-  END IF;
-
+  zipString := substring(addrArray[addrArrayLen] from E'(\\d{5}(|[-+]\\d{4}))$');
+  --zipString := substring(rawInput from ws || E'(\\d{5}(|[-+]\\d{4}))$');
   IF zipString IS NOT NULL THEN
-    fullStreet := substring(rawInput from '(.*)'
-        || ws || '+' || cull_null(zipString) || '[- ]?([0-9]{4})?$');
-  ELSE
-    fullStreet := rawInput;
+    result.zip:=substring(zipString, 1,5);
+    IF length(zipString) > 5 THEN
+      result.zip4:=substring(zipString, 7,4);
+    END IF;
+    result.parsed=true;
+    raise DEBUG 'zipString: "%",zip: "%", zip4: "%"', zipString, result.zip,result.zip4;
+    addrArrayLen:=addrArrayLen-1;
+    addrArray:=addrArray[1:addrArrayLen];
+    raise DEBUG 'addrArray after zip is now: %',addrArray ;
   END IF;
 
-  IF debug_flag THEN
-    raise notice 'fullStreet: %', fullStreet;
-  END IF;
-
-  -- FIXME: state_extract should probably be returning a record so we can
-  -- avoid having to parse the result from it.
-  tempString := state_extract(fullStreet);
-  IF tempString IS NOT NULL THEN
-    state := split_part(tempString, ':', 1);
-    result.stateAbbrev := split_part(tempString, ':', 2);
-  END IF;
-
-  IF debug_flag THEN
-    raise notice 'stateAbbrev: %', result.stateAbbrev;
-  END IF;
-
-  -- The easiest case is if the address is comma delimited.  There are some
-  -- likely cases:
-  --   street level, location, state
-  --   street level, location state
-  --   street level, location
-  --   street level, internal address, location, state
-  --   street level, internal address, location state
-  --   street level, internal address location state
-  --   street level, internal address, location
-  --   street level, internal address location
-  -- The first three are useful.
-  tempString := substring(fullStreet, '(?i),' || ws || '+(.*?)(,?' || ws ||
-      '*' || cull_null(state) || '$)');
-  IF tempString = '' THEN tempString := NULL; END IF;
-  IF tempString IS NOT NULL THEN
-    result.location := tempString;
-    IF addressString IS NOT NULL THEN
-      fullStreet := substring(fullStreet, '(?i)' || addressString || ws ||
-          '+(.*),' || ws || '+' || result.location);
-    ELSE
-      fullStreet := substring(fullStreet, '(?i)(.*),' || ws || '+' ||
-          result.location);
+  -- iterate over the next three elements looking for the state
+  -- (these are the longest)
+  -- if  we don't find one, then we'll try to take it from the zipcode
+  FOR anInt in REVERSE addrArrayLen..addrArrayLen-2 LOOP
+    EXIT WHEN stateString IS NOT NULL;
+    tempString :=array_to_string(addrArray[anInt:addrArrayLen], ' ');
+    raise DEBUG 'anInt: %, tempString: %', anInt, tempString;
+    rec := state_extract(tempString);
+    raise DEBUG 'rec: %', rec;
+    IF rec.stateAbbrev IS NOT NULL THEN
+      stateString := rec.state;
+      result.stateAbbrev := rec.stateAbbrev;
+      addrArrayLen:=anInt-1;
+      addrArray:=addrArray[1:addrArrayLen];
+      raise DEBUG 'addrArray after state is now: %',addrArray ;
+    END IF;
+  END LOOP;
+  -- remove state element
+  
+  IF rec.stateAbbrev IS NULL AND result.zip IS NOT NULL THEN
+    -- get the state from the zipcodes, if we can
+    tempInt := count(*) 
+              FROM zip_lookup
+              WHERE zip=result.zip;
+    raise debug 'trying to get state from zip "%", tempInt: %', result.zip,tempInt;
+    IF tempInt = 1 THEN
+      result.stateAbbrev := "state" FROM zip_lookup WHERE "zip"="result"."zip";
     END IF;
   END IF;
-
-  IF debug_flag THEN
-    raise notice 'fullStreet: %', fullStreet;
-    raise notice 'location: %', result.location;
+  IF result.stateAbbrev IS NOT NULL THEN
+    stateExists:=place.statefp IS NOT NULL 
+                       FROM place,state 
+                       WHERE state.stusps=result.stateAbbrev
+                       AND place.statefp=state.statefp
+                       LIMIT 1;
   END IF;
-
-  -- Pull out the full street information, defined as everything between the
-  -- address and the state.  This includes the location.
-  -- This doesnt need to be done if location has already been found.
-  IF result.location IS NULL THEN
-    IF addressString IS NOT NULL THEN
-      IF state IS NOT NULL THEN
-        fullStreet := substring(fullStreet, '(?i)' || addressString ||
-            ws || '+(.*?)' || ws || '+' || state);
-      ELSE
-        fullStreet := substring(fullStreet, '(?i)' || addressString ||
-            ws || '+(.*?)');
+  raise DEBUG 'stateExists: %', stateExists;
+  raise DEBUG 'result.stateAbbrev: %', result.stateAbbrev;
+  raise DEBUG 'stateString: %', stateString;
+  raise DEBUG 'addrArray after state and zip is now: %',addrArray ;
+  
+  -- now find the city (is 4 words a reasonable assumption here?)
+  IF addrArray[1] IS NOT NULL THEN
+    tempInt:=NULL;
+  
+    FOR anInt in REVERSE addrArrayLen..addrArrayLen-(least(3,addrArrayLen)) LOOP
+      EXIT WHEN addrArray[anInt] ~* E'^\\d$'; -- short cut since no city should be numeric
+      tempString :=array_to_string(addrArray[anInt:addrArrayLen], ' ');
+      locationString:=location_extract(tempString, result.stateAbbrev);
+      IF locationString IS NOT NULL THEN
+        addrMatches[anInt]:=locationString;
+        tempInt:=anInt; -- store the largest # of elements matched
+        RAISE DEBUG 'tempInt: % with % is now bigger', tempInt,locationString;
       END IF;
-    ELSE
-      IF state IS NOT NULL THEN
-        fullStreet := substring(fullStreet, '(?i)(.*?)' || ws ||
-            '+' || state);
-      ELSE
-        fullStreet := substring(fullStreet, '(?i)(.*?)');
-      END IF;
-    END IF;
-
-    IF debug_flag THEN
-      raise notice 'fullStreet: %', fullStreet;
-    END IF;
-
-    result.location := location_extract(fullStreet, result.stateAbbrev);
-
-    -- A location can't be a street type, sorry.
-    IF lower(result.location) IN (SELECT lower(name) FROM street_type_lookup) THEN
-        result.location := NULL;
-    END IF;
-
-    -- If the location was found, remove it from fullStreet
-    IF result.location IS NOT NULL THEN
-      fullStreet := substring(fullStreet, '(?i)(.*)' || ws || '+' ||
-          result.location);
-    END IF;
-  END IF;
-
-  IF debug_flag THEN
-    raise notice 'fullStreet: %', fullStreet;
-    raise notice 'location: %', result.location;
-  END IF;
-
-  -- Determine if any internal address is included, such as apartment
-  -- or suite number.
-  SELECT INTO tempInt count(*) FROM secondary_unit_lookup
-      WHERE texticregexeq(fullStreet, '(?i)' || ws || name || '('
-          || ws || '|$)');
-  IF tempInt = 1 THEN
-    result.internal := substring(fullStreet, '(?i)' || ws || '('
-        || name ||  ws || '*#?' || ws
-        || '*(?:[0-9][-0-9a-zA-Z]*)?' || ')(?:' || ws || '|$)')
-        FROM secondary_unit_lookup
-        WHERE texticregexeq(fullStreet, '(?i)' || ws || name || '('
-        || ws || '|$)');
-    ELSIF tempInt > 1 THEN
-    -- In the event of multiple matches to a secondary unit designation, we
-    -- will assume that the last one is the true one.
-    tempInt := 0;
-    FOR rec in SELECT trim(substring(fullStreet, '(?i)' || ws || '('
-        || name || '(?:' || ws || '*#?' || ws
-        || '*(?:[0-9][-0-9a-zA-Z]*)?)' || ws || '?|$)')) as value
-        FROM secondary_unit_lookup
-        WHERE texticregexeq(fullStreet, '(?i)' || ws || name || '('
-        || ws || '|$)') LOOP
-      IF tempInt < position(rec.value in fullStreet) THEN
-        tempInt := position(rec.value in fullStreet);
-        result.internal := rec.value;
-      END IF;
+      raise DEBUG 'tempString: %, locationString: %', tempString,locationString;
     END LOOP;
+    -- take the longest match
+    -- hopefully this will catch things like:
+    -- 123 somestreet East San Gabriel as being in "East San Gabriel"
+    -- not on street 123 somestreet east. *because* the East is likely
+    -- to be full spelled out, and we haven't tried to adjust for that yet
+    -- if searches for is on 123 somestreet, E San Gabriel, we're probably
+    -- screwed.
+    IF tempInt IS NOT NULL THEN
+      result.location:=addrMatches[tempInt];
+      addrArrayLen := tempInt-1;
+      addrArray := addrArray[1:addrArrayLen];
+    ELSE
+      result.location:=NULL;
+    END IF;
+    raise DEBUG 'addrArray after location is now: %',addrArray ;
   END IF;
+  -- FIXME: in the case where we have just
+  -- a street and zip (e.g. 123 Something, 12345), and
+  -- there happens to be a place named 'Something' in that state,
+  -- we will not match the street because we think it's a place. 
+  -- I'm not sure a good way to work
+  -- around this.
+  -- if we can't find a city, then we'll work from the front of the remaining
+  -- elements to match a street. Whatever is left should be the location.
+  
+  -- move forward now with each element
+  -- first is the predir, which can be a variant found in
+  -- the direction table.
+  -- predir can be two words (i.e. 1234 south west somestreet)
+  IF addrArray[1] IS NOT NULL THEN
+    tempInt:=0; -- used to determine if we used both words
+    stmt:=$$ SELECT abbrev FROM 
+                    direction_lookup as dl,predirabrv_lookup as pd
+                    WHERE dl.abbrev ilike pd.predirabrv
+                    AND dl.name ilike $$ || quote_literal(addrArray[1]);
+  
+    IF stateExists THEN
+      stmt:= stmt || ' AND pd.state='||quote_literal(result.stateAbbrev);
+    END IF;
+    stmt:=stmt || ' LIMIT 1';
+    --raise debug 'stmt is: %', stmt;
+  
+    EXECUTE stmt INTO tempString;
+    -- try two words
+    IF length(tempString)=1 THEN -- maybe there's a second part
+     stmt:=$$ SELECT abbrev FROM 
+                      direction_lookup as dl,predirabrv_lookup as pd
+                      WHERE dl.abbrev ilike pd.predirabrv
+                      AND dl.name ilike $$ || quote_literal(addrArray[2]);
 
-  IF debug_flag THEN
-    raise notice 'internal: %', result.internal;
-  END IF;
-
-  IF result.location IS NULL THEN
-    -- If the internal address is given, the location is everything after it.
-    result.location := substring(fullStreet, result.internal || ws || '+(.*)$');
-  END IF;
-
-  IF debug_flag THEN
-    raise notice 'location: %', result.location;
-  END IF;
-
-  -- Pull potential street types from the full street information
-  tempInt := count(*) FROM street_type_lookup
-      WHERE texticregexeq(fullStreet, '(?i)' || ws || '(' || name
-      || ')(?:' || ws || '|$)');
-  IF tempInt = 1 THEN
-    SELECT INTO rec abbrev, substring(fullStreet, '(?i)' || ws || '('
-        || name || ')(?:' || ws || '|$)') AS given FROM street_type_lookup
-        WHERE texticregexeq(fullStreet, '(?i)' || ws || '(' || name
-        || ')(?:' || ws || '|$)');
-    streetType := rec.given;
-    result.streetTypeAbbrev := rec.abbrev;
-  ELSIF tempInt > 1 THEN
-    tempInt := 0;
-    FOR rec IN SELECT abbrev, substring(fullStreet, '(?i)' || ws || '('
-        || name || ')(?:' || ws || '|$)') AS given FROM street_type_lookup
-        WHERE texticregexeq(fullStreet, '(?i)' || ws || '(' || name
-        || ')(?:' || ws || '|$)') LOOP
-      -- If we have found an internal address, make sure the type
-      -- precedes it.
-      IF result.internal IS NOT NULL THEN
-        IF position(rec.given IN fullStreet) < position(result.internal IN fullStreet) THEN
-          IF tempInt < position(rec.given IN fullStreet) THEN
-            streetType := rec.given;
-            result.streetTypeAbbrev := rec.abbrev;
-            tempInt := position(rec.given IN fullStreet);
-          END IF;
-        END IF;
-      ELSIF tempInt < position(rec.given IN fullStreet) THEN
-        streetType := rec.given;
-        result.streetTypeAbbrev := rec.abbrev;
-        tempInt := position(rec.given IN fullStreet);
+      IF stateExists THEN
+        stmt:= stmt || ' AND pd.state='||quote_literal(result.stateAbbrev);
       END IF;
+      stmt:=stmt || ' LIMIT 1';
+      --raise debug 'stmt is: %', stmt;
+      EXECUTE stmt INTO tempString2;
+      IF length(tempString2)=1  THEN -- we can only append one letter
+        tempInt:=1;
+        tempString:=tempString||tempString2;
+      END IF;
+    END IF; 
+
+    raise debug 'predir is: %', tempString;
+    IF tempString IS NOT NULL THEN
+      result.predirabbrev:=tempString;
+      addrArray := addrArray[2+tempInt:addrArrayLen];
+      addrArrayLen:=array_upper(addrArray,1);
+      raise DEBUG 'addrArray after predir is now: %',addrArray ;
+    END IF;
+  END IF;
+  -- next we look for the pretype
+  -- some types are two word, but seems to only
+  -- be a few. If we find one of these, then just append and remove it.
+  -- Note, there is also 'I-' which is for interstates,
+  -- and with which we do not cope.
+  IF addrArray[1] IS NOT NULL THEN
+    IF UPPER(addrArray[2]) IN ('HWY','RD','RTE') THEN
+      addrArray[2]:=addrArray[1]|| ' ' || addrArray[2];
+      addrArray:=addrArray[2:addrArrayLen];
+      addrArrayLen:=addrArrayLen-1;
+      raise DEBUG 'addrArray after pretype1 is now: %',addrArray ;
+    END IF;
+
+    stmt:=$$ SELECT abbrev FROM 
+                    street_type_lookup as st,pretypabrv_lookup as pt
+                    WHERE st.abbrev ilike pt.pretypabrv
+                    AND st.name ILIKE $$ || quote_literal(addrArray[1]);
+  
+    IF stateExists THEN
+      stmt:= stmt || ' AND pt.state='||quote_literal(result.stateAbbrev);
+    END IF;
+    stmt:=stmt || ' LIMIT 1';
+    --raise debug 'stmt is: %', stmt;
+  
+    EXECUTE stmt INTO tempString;
+    raise debug 'pretyp is: %', tempString;
+    IF tempString IS NOT NULL THEN
+      result.pretypeabbrev:=tempString;
+      addrArray := addrArray[2:addrArrayLen];
+      addrArrayLen:=addrArrayLen-1;
+      raise DEBUG 'addrArray after pretype2 is now: %',addrArray ;
+    END IF;
+  END IF;
+  raise DEBUG 'addrArray after pretype is now: %',addrArray ;
+  
+  -- do prequal. these don't to anything, but are just
+  -- taken from the list of possible matches.
+  IF addrArray[1] IS NOT NULL THEN
+    stmt:=$$ SELECT prequalabr FROM 
+                    prequalabr_lookup as pq
+                    WHERE pq.prequalabr ILIKE $$  || quote_literal(addrArray[1]);
+  
+    IF stateExists IS NOT NULL THEN
+      stmt:= stmt || ' AND pq.state='||quote_literal(result.stateAbbrev);
+    END IF;
+    stmt:=stmt || ' LIMIT 1';
+    --raise debug 'stmt is: %', stmt;
+  
+    EXECUTE stmt INTO tempString;
+    raise debug 'prequalabrv is: %', tempString;
+    IF tempString IS NOT NULL THEN
+      result.prequalabbrev:=tempString;
+      addrArray := addrArray[2:addrArrayLen];
+      addrArrayLen:=array_upper(addrArray,1);
+    END IF;
+  END IF;
+  RAISE DEBUG 'addrArray after prequal is now: %',addrArray ;
+
+
+  IF addrArray[1] IS NOT NULL THEN
+    -- now add things to street until we match one of
+    -- suf*
+    -- if we have multiple matches, use the last one
+    -- XXX this would be a good place to not be discarding
+    -- the comma information if at all possible, so
+    -- we can match street names that actually end in
+    -- a word that could be a suffix.
+    FOR element IN reverse addrArrayLen..1 LOOP
+      tempInt:=element;
+      matchedSuffix:=true;
+      EXIT WHEN addrArray[element] ILIKE ANY (SELECT name from suffixes_lookup );
+      -- thus, matchedSuffix will be false if we get to the end
+      -- of the loop and have never matched.
+      matchedSuffix:=false;
+      --addrMatches:=array_append(streetElements,addrArray[element]);
+      --raise DEBUG 'streetElements is now: %',streetElements;
+      --raise DEBUG 'addrArray: %',addrArray;
     END LOOP;
-  END IF;
-
-  IF debug_flag THEN
-    raise notice 'streetTypeAbbrev: %', result.streetTypeAbbrev;
-  END IF;
-
-  -- There is a little more processing required now.  If the word after the
-  -- street type begins with a number, the street type should be considered
-  -- part of the name, as well as the next word.  eg, State Route 225a.  If
-  -- the next word starts with a char, then everything after the street type
-  -- will be considered location.  If there is no street type, then I'm sad.
-  IF streetType IS NOT NULL THEN
-    tempString := substring(fullStreet, streetType || ws ||
-        E'+([0-9][^ ,.\t\r\n\f]*?)' || ws);
-    IF tempString IS NOT NULL THEN
-      IF result.location IS NULL THEN
-        result.location := substring(fullStreet, streetType || ws || '+'
-                 || tempString || ws || '+(.*)$');
-      END IF;
-      reducedStreet := substring(fullStreet, '(.*)' || ws || '+'
-                    || result.location || '$');
-      streetType := NULL;
-      result.streetTypeAbbrev := NULL;
+    RAISE DEBUG 'tempInt for street is %', tempInt;
+    
+    IF matchedSuffix THEN
+      result.streetName:=array_to_string(addrArray[1:tempInt-1], ' ');
+      raise DEBUG 'streetName is: %', result.streetName;
+      addrArray := addrArray[tempInt:addrArrayLen];
+      addrArrayLen:=array_upper(addrArray,1);
     ELSE
-      IF result.location IS NULL THEN
-        result.location := substring(fullStreet, streetType || ws || '+(.*)$');
-      END IF;
-      reducedStreet := substring(fullStreet, '^(.*)' || ws || '+'
-                    || streetType);
-    END IF;
-
-    -- The pre direction should be at the beginning of the fullStreet string.
-    -- The post direction should be at the beginning of the location string
-    -- if there is no internal address
-    tempString := substring(reducedStreet, '(?i)(^' || name
-        || ')' || ws) FROM direction_lookup WHERE
-        texticregexeq(reducedStreet, '(?i)(^' || name || ')' || ws)
-        ORDER BY length(name) DESC;
-    IF tempString IS NOT NULL THEN
-      preDir := tempString;
-      result.preDirAbbrev := abbrev FROM direction_lookup
-          where texticregexeq(reducedStreet, '(?i)(^' || name || ')' || ws)
-          ORDER BY length(name) DESC;
-      result.streetName := substring(reducedStreet, '^' || preDir || ws || '(.*)');
-    ELSE
-      result.streetName := reducedStreet;
-    END IF;
-
-    IF texticregexeq(result.location, '(?i)' || result.internal || '$') THEN
-      -- If the internal address is at the end of the location, then no
-      -- location was given.  We still need to look for post direction.
-      SELECT INTO rec abbrev,
-          substring(result.location, '(?i)^(' || name || ')' || ws) as value
-          FROM direction_lookup WHERE texticregexeq(result.location, '(?i)^'
-          || name || ws) ORDER BY length(name) desc;
-      IF rec.value IS NOT NULL THEN
-        postDir := rec.value;
-        result.streetDirAbbrev := rec.abbrev;
-      END IF;
-      result.location := null;
-    ELSIF result.internal IS NULL THEN
-      -- If no location is given, the location string will be the post direction
-      SELECT INTO tempInt count(*) FROM direction_lookup WHERE
-          upper(result.location) = upper(name);
-      IF tempInt != 0 THEN
-        postDir := result.location;
-        SELECT INTO result.streetDirAbbrev abbrev FROM direction_lookup WHERE
-            upper(postDir) = upper(name);
-        result.location := NULL;
-      ELSE
-        -- postDirection is not equal location, but may be contained in it.
-        SELECT INTO tempString substring(result.location, '(?i)(^' || name
-            || ')' || ws) FROM direction_lookup WHERE
-            texticregexeq(result.location, '(?i)(^' || name || ')' || ws)
-            ORDER BY length(name) desc;
-        IF tempString IS NOT NULL THEN
-          postDir := tempString;
-          SELECT INTO result.streetDirAbbrev abbrev FROM direction_lookup
-              where texticregexeq(result.location, '(?i)(^' || name || ')' || ws);
-          result.location := substring(result.location, '^' || postDir || ws || '+(.*)');
-        END IF;
-      END IF;
-    ELSE
-      -- internal is not null, but is not at the end of the location string
-      -- look for post direction before the internal address
-      SELECT INTO tempString substring(fullStreet, '(?i)' || streetType
-          || ws || '+(' || name || ')' || ws || '+' || result.internal)
-          FROM direction_lookup WHERE texticregexeq(fullStreet, '(?i)'
-          || ws || name || ws || '+' || result.internal) ORDER BY length(name) desc;
-      IF tempString IS NOT NULL THEN
-        postDir := tempString;
-        SELECT INTO result.streetDirAbbrev abbrev FROM direction_lookup
-            WHERE texticregexeq(fullStreet, '(?i)' || ws || name || ws);
-      END IF;
-    END IF;
-  ELSE
-  -- No street type was found
-
-    -- If an internal address was given, then the split becomes easy, and the
-    -- street name is everything before it, without directions.
-    IF result.internal IS NOT NULL THEN
-      reducedStreet := substring(fullStreet, '(?i)^(.*?)' || ws || '+'
-                    || result.internal);
-      tempInt := count(*) FROM direction_lookup WHERE
-          texticregexeq(reducedStreet, '(?i)' || ws || name || '$');
-      IF tempInt > 0 THEN
-        postDir := substring(reducedStreet, '(?i)' || ws || '('
-            || name || ')' || '$') FROM direction_lookup
-            WHERE texticregexeq(reducedStreet, '(?i)' || ws || name || '$');
-        result.streetDirAbbrev := abbrev FROM direction_lookup
-            WHERE texticregexeq(reducedStreet, '(?i)' || ws || name || '$');
-      END IF;
-      tempString := substring(reducedStreet, '(?i)^(' || name
-          || ')' || ws) FROM direction_lookup WHERE
-          texticregexeq(reducedStreet, '(?i)^(' || name || ')' || ws)
-          ORDER BY length(name) DESC;
-      IF tempString IS NOT NULL THEN
-        preDir := tempString;
-        result.preDirAbbrev := abbrev FROM direction_lookup WHERE
-            texticregexeq(reducedStreet, '(?i)(^' || name || ')' || ws)
-            ORDER BY length(name) DESC;
-        result.streetName := substring(reducedStreet, '(?i)^' || preDir || ws
-                   || '+(.*?)(?:' || ws || '+' || cull_null(postDir) || '|$)');
-      ELSE
-        result.streetName := substring(reducedStreet, '(?i)^(.*?)(?:' || ws
-                   || '+' || cull_null(postDir) || '|$)');
-      END IF;
-    ELSE
-
-      -- If a post direction is given, then the location is everything after,
-      -- the street name is everything before, less any pre direction.
-      tempInt := count(*) FROM direction_lookup
-          WHERE texticregexeq(fullStreet, '(?i)' || ws || name || '(?:'
-              || ws || '|$)');
-
-      IF tempInt = 1 THEN
-        -- A single postDir candidate was found.  This makes it easier.
-        postDir := substring(fullStreet, '(?i)' || ws || '('
-            || name || ')(?:' || ws || '|$)') FROM direction_lookup WHERE
-            texticregexeq(fullStreet, '(?i)' || ws || name || '(?:'
-            || ws || '|$)');
-        result.streetDirAbbrev := abbrev FROM direction_lookup
-            WHERE texticregexeq(fullStreet, '(?i)' || ws || name
-            || '(?:' || ws || '|$)');
-        IF result.location IS NULL THEN
-          result.location := substring(fullStreet, '(?i)' || ws || postDir
-                   || ws || '+(.*?)$');
-        END IF;
-        reducedStreet := substring(fullStreet, '^(.*?)' || ws || '+'
-                      || postDir);
-        tempString := substring(reducedStreet, '(?i)(^' || name
-            || ')' || ws) FROM direction_lookup WHERE
-            texticregexeq(reducedStreet, '(?i)(^' || name || ')' || ws)
-            ORDER BY length(name) DESC;
-        IF tempString IS NOT NULL THEN
-          preDir := tempString;
-          result.preDirAbbrev := abbrev FROM direction_lookup WHERE
-              texticregexeq(reducedStreet, '(?i)(^' || name || ')' || ws)
-              ORDER BY length(name) DESC;
-          result.streetName := substring(reducedStreet, '^' || preDir || ws
-                     || '+(.*)');
-        ELSE
-          result.streetName := reducedStreet;
-        END IF;
-      ELSIF tempInt > 1 THEN
-        -- Multiple postDir candidates were found.  We need to find the last
-        -- incident of a direction, but avoid getting the last word from
-        -- a two word direction. eg extracting "East" from "North East"
-        -- We do this by sorting by length, and taking the last direction
-        -- in the results that is not included in an earlier one.
-        -- This wont be a problem it preDir is North East and postDir is
-        -- East as the regex requires a space before the direction.  Only
-        -- the East will return from the preDir.
-        tempInt := 0;
-        FOR rec IN SELECT abbrev, substring(fullStreet, '(?i)' || ws || '('
-            || name || ')(?:' || ws || '|$)') AS value
-            FROM direction_lookup
-            WHERE texticregexeq(fullStreet, '(?i)' || ws || name
-            || '(?:' || ws || '|$)')
-            ORDER BY length(name) desc LOOP
-          tempInt := 0;
-          IF tempInt < position(rec.value in fullStreet) THEN
-            IF postDir IS NULL THEN
-              tempInt := position(rec.value in fullStreet);
-              postDir := rec.value;
-              result.streetDirAbbrev := rec.abbrev;
-            ELSIF NOT texticregexeq(postDir, '(?i)' || rec.value) THEN
-              tempInt := position(rec.value in fullStreet);
-              postDir := rec.value;
-              result.streetDirAbbrev := rec.abbrev;
-             END IF;
-          END IF;
+      -- do we match something that's like an internal part?
+      -- and do we have a location? if yes, then we can
+      -- assume that our address is everything up to
+      -- the internal part (handled below)
+      -- if we have a location and no internal part,
+      -- then we just everything and assume it's the street name
+      matchedInternal:=addrArray && array_accum(upper(name))::text[] from secondary_unit_lookup;
+      IF result.location  IS NOT NULL AND matchedInternal THEN
+      result.streetName:='';
+        FOR anInt IN 1..addrArrayLen LOOP
+          -- this is always 1 because we're shrinking the array as we go
+          EXIT WHEN name IS NOT NULL FROM secondary_unit_lookup WHERE addrArray[1] ILIKE name;
+          result.streetName:=result.streetName|| ' '||addrArray[1];
+          addrArray:=addrArray[2:addrArrayLen];
         END LOOP;
-        IF result.location IS NULL THEN
-          result.location := substring(fullStreet, '(?i)' || ws || postDir || ws
-                   || '+(.*?)$');
-        END IF;
-        reducedStreet := substring(fullStreet, '(?i)^(.*?)' || ws || '+'
-                      || postDir);
-        SELECT INTO tempString substring(reducedStreet, '(?i)(^' || name
-            || ')' || ws) FROM direction_lookup WHERE
-            texticregexeq(reducedStreet, '(?i)(^' || name || ')' || ws)
-            ORDER BY length(name) DESC;
-        IF tempString IS NOT NULL THEN
-          preDir := tempString;
-          SELECT INTO result.preDirAbbrev abbrev FROM direction_lookup WHERE
-              texticregexeq(reducedStreet, '(?i)(^' || name || ')' || ws)
-              ORDER BY length(name) DESC;
-          result.streetName := substring(reducedStreet, '^' || preDir || ws
-                     || '+(.*)');
-        ELSE
-          result.streetName := reducedStreet;
-        END IF;
+        result.streetName:=trim(result.streetName);
+      ELSIF result.location IS NOT NULL THEN
+        result.streetName=array_to_string(addrArray, ' ');
+        addrArray:='{}'::text[]; -- is there a better way to do this?
+        addrArrayLen:=0;
+        RAISE DEBUG 'assuming street is all remaining';
       ELSE
-
-        -- There is no street type, directional suffix or internal address
-        -- to allow distinction between street name and location.
-        IF result.location IS NULL THEN
-          IF debug_flag THEN
-            raise notice 'fullStreet: %', fullStreet;
-          END IF;
-
-          result.location := location_extract(fullStreet, result.stateAbbrev);
-          -- If the location was found, remove it from fullStreet
-          IF result.location IS NOT NULL THEN
-            fullStreet := substring(fullStreet, '(?i)(.*),' || ws || '+' ||
-                result.location);
-          END IF;
-        END IF;
-
-        -- Check for a direction prefix.
-        SELECT INTO tempString substring(fullStreet, '(?i)(^' || name
-            || ')' || ws) FROM direction_lookup WHERE
-            texticregexeq(fullStreet, '(?i)(^' || name || ')' || ws)
-            ORDER BY length(name);
-        IF tempString IS NOT NULL THEN
-          preDir := tempString;
-          SELECT INTO result.preDirAbbrev abbrev FROM direction_lookup WHERE
-              texticregexeq(fullStreet, '(?i)(^' || name || ')' || ws)
-              ORDER BY length(name) DESC;
-          IF result.location IS NOT NULL THEN
-            -- The location may still be in the fullStreet, or may
-            -- have been removed already
-            result.streetName := substring(fullStreet, '^' || preDir || ws
-                       || '+(.*?)(' || ws || '+' || result.location || '|$)');
-          ELSE
-            result.streetName := substring(fullStreet, '^' || preDir || ws
-                       || '+(.*?)' || ws || '*');
-          END IF;
-        ELSE
-          IF result.location IS NOT NULL THEN
-            -- The location may still be in the fullStreet, or may
-            -- have been removed already
-            result.streetName := substring(fullStreet, '^(.*?)(' || ws
-                       || '+' || result.location || '|$)');
-          ELSE
-            result.streetName := fullStreet;
-          END IF;
-        END IF;
+        raise WARNING 'no match for a street name??';
       END IF;
     END IF;
+      
+  END IF;
+  addrArrayLen:=array_upper(addrArray,1);
+  raise DEBUG 'addrArray after streetName is now: %',addrArray ;
+  --
+  -- now we look for the final elements, note that the order 
+  -- is slightly different than for the pre* elements.
+
+  IF matchedSuffix THEN -- slight optimization
+     -- suftyp
+     -- we don't have the same of two word issue (except for "Landing Strp")
+     -- that we did with the pretyp
+     IF addrArray[1] IS NOT NULL THEN
+       stmt:=$$ SELECT abbrev FROM 
+                       street_type_lookup as st,suftypabrv_lookup as pt
+                       WHERE st.abbrev ilike pt.suftypabrv
+                       AND st.name ILIKE $$ || quote_literal(addrArray[1]);
+
+       IF stateExists THEN
+         stmt:= stmt || ' AND pt.state='||quote_literal(result.stateAbbrev);
+       END IF;
+       stmt:=stmt || ' LIMIT 1';
+       raise debug 'stmt is: %', stmt;
+
+       EXECUTE stmt INTO tempString;
+       raise debug 'suftyp is: %', tempString;
+       IF tempString IS NOT NULL THEN
+         result.streettypeabbrev:=tempString;
+         addrArray := addrArray[2:addrArrayLen];
+         addrArrayLen:=addrArrayLen-1;
+         raise DEBUG 'addrArray after suftyp is now: %',addrArray ;
+       END IF;
+      END IF;
+      IF addrArray[1] IS NOT NULL THEN
+       -- sufdir as predir above
+        stmt:=$$ SELECT abbrev FROM 
+                        direction_lookup as dl,sufdirabrv_lookup as sd
+                        WHERE dl.abbrev ilike sd.sufdirabrv
+                        AND dl.name ilike $$ || quote_literal(addrArray[1]);
+
+        IF stateExists THEN
+          stmt:= stmt || ' AND sd.state='||quote_literal(result.stateAbbrev);
+        END IF;
+        stmt:=stmt || ' LIMIT 1';
+        --raise debug 'stmt is: %', stmt;
+
+        EXECUTE stmt INTO tempString;
+        raise debug 'sufdir is: %', tempString;
+        IF tempString IS NOT NULL THEN
+          result.streetdirabbrev:=tempString;
+          addrArray := addrArray[2:addrArrayLen];
+          addrArrayLen:=addrArrayLen-1;
+        END IF;
+      END IF;
+      raise DEBUG 'addrArray after sufdir is now: %',addrArray ;
+
+     -- FIXME: we should have a lookup table like
+     -- direction and street_types appropriate to the suffixes
+     -- sufqual as prequal above.
+     IF addrArray[1] IS NOT NULL THEN
+       stmt:=$$ SELECT sufqualabr FROM 
+                       sufqualabr_lookup as pq
+                       WHERE pq.sufqualabr ILIKE $$  || quote_literal(addrArray[1]);
+
+       IF stateExists THEN
+         stmt:= stmt || ' AND pq.state='||quote_literal(result.stateAbbrev);
+       END IF;
+       stmt:=stmt || ' LIMIT 1';
+       --raise debug 'stmt is: %', stmt;
+
+       EXECUTE stmt INTO tempString;
+       raise debug 'sufqualabrv is: %', tempString;
+       IF tempString IS NOT NULL THEN
+         result.streetqualabbrev:=tempString;
+         addrArray := addrArray[2:addrArrayLen];
+         addrArrayLen:=addrArrayLen-1;
+       END IF;
+     END IF;
+     raise DEBUG 'addrArray after sufqual is now: %',addrArray ;
+  END IF; -- matchedSuffix
+
+  
+  -- remove apt, suite, etc...
+  -- anything left is our location, if we didn't match
+  -- otherwise, raise a notice
+  IF addrArray[1] IS NOT NULL THEN
+    tempInt:=count(*) FROM secondary_unit_lookup as s WHERE
+      addrArray[1] ILIKE s.name;
+    IF tempInt=1 THEN
+    -- we found an internal part, if we have a location,
+    -- then the entire remaining fields should be our
+    -- internal part. If we don't have a location, then
+    -- assume that only the next field is part of the
+    -- internal
+      IF result.location IS NOT NULL THEN
+        result.internal:=array_to_string(addrArray, ' ');
+        addrArray:='{}'::text[];
+      ELSE
+        result.internal:=array_to_string(addrArray[1:2], ' ');
+        addrArray := addrArray[3:addrArrayLen];
+        addrArrayLen:=array_upper(addrArray,1);
+      END IF;
+      RAISE DEBUG 'result.internal: %', result.internal;
+    END IF;
+  END IF;
+  RAISE DEBUG 'addrArray after internal is now: %',addrArray ;
+  
+  -- finally, if we have no street or location,
+  -- then append whatever is left, and if that
+  -- doesn't work, try pulling it from the zip if we
+  -- have one.
+  IF addrArray<>'{}'::text[] THEN
+    tempString:=array_to_string(addrArray, ' ');
+    IF result.streetname IS NULL THEN
+      result.streetname:=tempString;
+      addrArray:='{}'::text[];
+    ELSIF result.location IS NULL  THEN
+      result.location:=array_to_string(addrArray, ' ');
+      addrArray:='{}'::text[];
+    ELSE
+      RAISE WARNING 'normalize_address: These components were not parsed: %', addrArray;
+    END IF;
+    RAISE DEBUG 'addrArray after last ditch matching is now: %',addrArray ;
   END IF;
 
-  result.address := to_number(addressString, '99999999999');
-  result.zip := zipString;
+  IF result.location IS NULL AND result.zip is NOT NULL THEN
+    result.location:= coalesce(place,countysub,countyfull) 
+      FROM zip_lookup WHERE result.zip ilike zip_lookup.zip;
+  END IF;
 
+  -- i'm not sure this is the right thing to do... they may not all be numeric
+  result.address := to_number(addressString, '99999999999');
   result.parsed := TRUE;
   RETURN result;
 END
