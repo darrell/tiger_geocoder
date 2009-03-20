@@ -26,7 +26,8 @@ CREATE TYPE norm_addy AS (
     internal VARCHAR,
     location VARCHAR,
     stateAbbrev VARCHAR,
-    zip VARCHAR,
+    zip CHAR(5),
+    zip4 CHAR(4),
     parsed BOOLEAN);
 -- Lookup Tables
 \cd tables
