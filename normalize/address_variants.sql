@@ -100,7 +100,8 @@ CREATE OR REPLACE FUNCTION
               ROW(in_addr.address,predirabrv_b,pretypabrv_b,
                   prequalabr_b,name_b,suftypabrv_b,
                   sufdirabrv_b,sufqualabr_b,
-                  NULL,NULL,state,NULL,NULL,in_addr.parsed)::norm_addy as addr,
+                  in_addr.internal,in_addr.location,state,
+                  in_addr.zip,in_addr.zip4,in_addr.parsed)::norm_addy as addr,
               fullname_a,fullname_b,
               array_sort(ARRAY[zipr_a,zipl_a,zipr_b,zipl_b]) as zips,
               exact,levenshtein
@@ -154,7 +155,7 @@ CREATE OR REPLACE FUNCTION
           RETURN NEXT;
         END LOOP;
       END LOOP addrs;
-    --DROP TABLE addr_var_temp;    
+    DROP TABLE IF EXISTS addr_var_temp;    
     RETURN;
   END;
-$_$ language plpgsql STABLE STRICT;
+$_$ language plpgsql STRICT;
