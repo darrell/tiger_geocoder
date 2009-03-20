@@ -11,28 +11,28 @@ BEGIN
 
   result := cull_null(input.address::text)
          || CASE WHEN input.preDirAbbrev IS NOT NULL THEN ' ' ELSE '' END
-         || cull_null(input.preDirAbbrev)
+         || cull_null(upper(input.preDirAbbrev))
          || CASE WHEN input.preTypeAbbrev IS NOT NULL THEN ' ' ELSE '' END
-         || cull_null(input.preTypeAbbrev)
+         || cull_null(initcap(input.preTypeAbbrev))
          || CASE WHEN input.preQualAbbrev IS NOT NULL THEN ' ' ELSE '' END
-         || cull_null(input.preQualAbbrev)
+         || cull_null(initcap(input.preQualAbbrev))
          || CASE WHEN input.streetName IS NOT NULL THEN ' ' ELSE '' END
-         || cull_null(input.streetName)
+         || cull_null(initcap(input.streetName))
          || CASE WHEN input.streetTypeAbbrev IS NOT NULL THEN ' ' ELSE '' END
-         || cull_null(input.streetTypeAbbrev)
+         || cull_null(initcap(input.streetTypeAbbrev))
          || CASE WHEN input.streetDirAbbrev IS NOT NULL THEN ' ' ELSE '' END
-         || cull_null(input.streetDirAbbrev)
+         || cull_null(upper(input.streetDirAbbrev))
          || CASE WHEN input.streetQualAbbrev IS NOT NULL THEN ' ' ELSE '' END
-         || cull_null(input.streetQualAbbrev)
+         || cull_null(initcap(input.streetQualAbbrev))
          || CASE WHEN
               input.address IS NOT NULL OR
               input.streetName IS NOT NULL
               THEN ', ' ELSE '' END
-         || cull_null(input.internal)
+         || cull_null(initcap(input.internal))
          || CASE WHEN input.internal IS NOT NULL THEN ', ' ELSE '' END
-         || cull_null(input.location)
+         || cull_null(initcap(input.location))
          || CASE WHEN input.location IS NOT NULL THEN ', ' ELSE '' END
-         || cull_null(input.stateAbbrev)
+         || cull_null(upper(input.stateAbbrev))
          || CASE WHEN input.stateAbbrev IS NOT NULL THEN ' ' ELSE '' END
          || cull_null(input.zip);
 
