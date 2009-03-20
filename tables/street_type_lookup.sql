@@ -131,6 +131,7 @@ CRSSNG	Xing
 XING	Xing
 CROSSROAD	Xrd
 CURVE	Curv
+CUTOFF	Cutoff
 DALE	Dl
 DL	Dl
 DAM	Dm
@@ -144,6 +145,7 @@ DRIV	Dr
 DRIVE	Dr
 DRV	Dr
 DRIVES	Drs
+DITCH	Ditch
 EST	Est
 ESTATE	Est
 ESTATES	Ests
@@ -539,6 +541,7 @@ VST	Vis
 VSTA	Vis
 WALK	Walk
 WALKS	Walk
+WALKWAY	Walkway
 WALL	Wall
 WAY	Way
 WY	Way
