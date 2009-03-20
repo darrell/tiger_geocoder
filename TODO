@@ -1,3 +1,4 @@
+--
 Address normalization would work better if we had an exhaustive
 list of possible values in the pre* and suf* fields of featnames
 --
@@ -44,3 +45,9 @@ from normalize_address.sql:
   -- FIXME: we should have a lookup table like
   -- direction and street_types appropriate to the suffixes
   -- sufqual as prequal above.
+
+--
+
+address_variants() should be more thoughtful about ranking
+an address based on the number of (mis-)matched elements.
+
