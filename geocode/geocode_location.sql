@@ -80,4 +80,4 @@ BEGIN
   RETURN;
 
 END;
-$_$ LANGUAGE plpgsql;
+$_$ LANGUAGE plpgsql STABLE STRICT;

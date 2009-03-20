@@ -96,4 +96,4 @@ BEGIN
   RAISE DEBUG 'state_lookup returning state: %, stateAbbrev: %', state,stateAbbrev;
   RETURN;
 END;
-$_$ LANGUAGE plpgsql;
+$_$ LANGUAGE plpgsql STABLE STRICT;

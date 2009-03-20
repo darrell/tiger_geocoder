@@ -22,7 +22,7 @@ BEGIN
   result := result + rate_attributes($1, $2, $3, $4, $5, $6, $7, $8);
   RETURN result;
 END;
-$_$ LANGUAGE plpgsql;
+$_$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 -- rate_attributes(dirpA, dirpB, streetNameA, streetNameB, streetTypeA,
 -- streetTypeB, dirsA, dirsB)
@@ -55,4 +55,4 @@ BEGIN
       directionWeight;
   return result;
 END;
-$_$ LANGUAGE plpgsql;
+$_$ LANGUAGE plpgsql IMMUTABLE STRICT;

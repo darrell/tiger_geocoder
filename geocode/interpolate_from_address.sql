@@ -55,4 +55,4 @@ BEGIN
     result = line_interpolate_point(road, part);
     RETURN result;
 END;
-$_$ LANGUAGE plpgsql;
+$_$ LANGUAGE plpgsql IMMUTABLE STRICT;

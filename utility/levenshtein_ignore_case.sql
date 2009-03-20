@@ -7,4 +7,4 @@ BEGIN
   result := levenshtein(upper($1), upper($2));
   RETURN result;
 END
-$_$ LANGUAGE plpgsql;
+$_$ LANGUAGE plpgsql IMMUTABLE STRICT;

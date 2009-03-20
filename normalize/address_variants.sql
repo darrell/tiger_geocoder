@@ -106,7 +106,7 @@ CREATE OR REPLACE FUNCTION
               exact,levenshtein
              FROM addr_var_temp
              -- oh for the want of a case insensitive "is distinct"
-             WHERE ((predirabrv_a IS NULL AND in_addr.preDirAbbrev IS NULL) 
+             WHERE ((predirabrv_a IS NULL )--AND in_addr.preDirAbbrev IS NULL) 
                       OR predirabrv_a ilike in_addr.preDirAbbrev) 
                   AND
                    ((pretypabrv_a IS NULL AND in_addr.preTypeAbbrev IS NULL) 
@@ -157,4 +157,4 @@ CREATE OR REPLACE FUNCTION
     --DROP TABLE addr_var_temp;    
     RETURN;
   END;
-$_$ language plpgsql;
+$_$ language plpgsql STABLE STRICT;

@@ -24,4 +24,4 @@ BEGIN
 
   RETURN result;
 END
-$_$ LANGUAGE plpgsql;
+$_$ LANGUAGE plpgsql IMMUTABLE;

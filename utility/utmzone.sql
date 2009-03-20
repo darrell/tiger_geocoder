@@ -14,4 +14,4 @@ BEGIN
     zone:=floor((x(geomgeog)+180)/6)+1;
     RETURN zone+pref;
 END;
-$BODY$ LANGUAGE 'plpgsql' immutable;
+$BODY$ LANGUAGE 'plpgsql' immutable strict;

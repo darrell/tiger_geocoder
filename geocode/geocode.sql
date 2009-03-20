@@ -33,7 +33,7 @@ BEGIN
   RETURN;
 
 END;
-$_$ LANGUAGE plpgsql;
+$_$ LANGUAGE plpgsql STABLE STRICT;
 
 
 CREATE OR REPLACE FUNCTION geocode(
@@ -130,4 +130,4 @@ BEGIN
   RETURN;
 
 END;
-$_$ LANGUAGE plpgsql;
+$_$ LANGUAGE plpgsql STABLE STRICT;

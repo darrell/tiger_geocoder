@@ -5,4 +5,4 @@ AS $_$
 BEGIN
     RETURN coalesce($1,'');
 END;
-$_$ LANGUAGE plpgsql;
+$_$ LANGUAGE plpgsql IMMUTABLE STRICT;
