@@ -1,12 +1,4 @@
-set search_path=public,tiger;
-DROP AGGREGATE array_accum(anyelement);
-CREATE AGGREGATE array_accum (anyelement)
-(
-    sfunc = array_append,
-    stype = anyarray,
-    initcond = '{}'
-);
-
+set search_path=tiger,public;
 -- geocode(cursor, address, directionPrefix, streetName,
 -- streetTypeAbbreviation, directionSuffix, location, stateAbbreviation,
 -- zipCode)

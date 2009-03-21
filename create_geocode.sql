@@ -2,6 +2,9 @@
 -- the PostGIS functions/types which are in public.
 SET search_path TO tiger,public;
 set client_min_messages=error;
+\set ON_ERROR_STOP true
+
+begin;
 
 DROP schema if exists tiger cascade;
 create schema tiger;
@@ -29,16 +32,18 @@ CREATE TYPE norm_addy AS (
     zip CHAR(5),
     zip4 CHAR(4),
     parsed BOOLEAN);
--- Lookup Tables
-\cd tables
-\i lookup_tables.sql 
+
 -- System/General helper functions
-\cd ../utility
+\cd ./utility
+\i array_helpers.sql
 \i utmzone.sql
 \i cull_null.sql
 \i nullable_levenshtein.sql
 \i levenshtein_ignore_case.sql
-\i array_helpers.sql
+
+-- Lookup Tables
+\cd ../tables
+\i lookup_tables.sql 
 
 ---- Address normalizer
 -- General helpers
@@ -48,3 +53,5 @@ CREATE TYPE norm_addy AS (
 -- General helpers
 \cd ../geocode
 \i geocoder.sql
+
+commit;
