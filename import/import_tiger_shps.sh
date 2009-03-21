@@ -83,7 +83,7 @@ DEBUG='false'
 QUIET='false'
 
 # create index on these fields
-INDEXES=(statefp countyfp cousubfp name street fullstreet arid tlid linearid fullname)
+INDEXES=(statefp placefp countyfp cousubfp name street fullstreet arid tlid linearid fullname)
 
 # these fields get indexes
 
