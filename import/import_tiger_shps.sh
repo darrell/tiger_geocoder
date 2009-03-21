@@ -246,7 +246,7 @@ function loadshp () {
     addcols "$SCHEMA" "$TABLE"
    local rmthis=''
    for rmthis in ${BASEDIR}/${BASESHP}.* ${BASEDIR}/`basename ${NEWFILE} .shp`.*; do
-     test -f ${rmthis} && note removing ${rmthis} && ${RM} ${rmthis}
+     test -f ${rmthis} && debug removing ${rmthis} && ${RM} ${rmthis}
    done
 }
 
@@ -297,7 +297,7 @@ function loaddbf () {
   addcols "$SCHEMA" "$TABLE"
   local rmthis=''
   for rmthis in ${BASEDIR}/${BASESHP}.*; do
-    test -f ${rmthis} && note removing ${rmthis} && ${RM} ${rmthis}
+    test -f ${rmthis} && debug removing ${rmthis} && ${RM} ${rmthis}
   done
 }
 
