@@ -1,4 +1,4 @@
-DROP TABLE IF EXISTS street_type_lookup;
+DROP TABLE IF EXISTS street_type_lookup CASCADE;
 SET search_path = tiger, public;
 CREATE TABLE street_type_lookup (
     name character varying(20) PRIMARY KEY,

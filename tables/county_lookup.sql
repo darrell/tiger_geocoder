@@ -20,3 +20,7 @@
        ON county_lookup (soundex(name));
    CREATE INDEX county_lookup_state_idx
        ON county_lookup (state);
+   CREATE INDEX county_lookup_statefp_idx
+       ON county_lookup (statefp);
+   CREATE INDEX county_lookup_countyfp_idx
+       ON county_lookup (countyfp);

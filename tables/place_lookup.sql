@@ -20,3 +20,7 @@ CREATE INDEX place_lookup_name_idx
     ON place_lookup using btree(name);
 CREATE INDEX place_lookup_state_idx
     ON place_lookup using btree(state);
+CREATE INDEX place_lookup_statefp_idx
+    ON place_lookup using btree(statefp);
+CREATE INDEX place_lookup_placefp_idx
+    ON place_lookup using btree(placefp);

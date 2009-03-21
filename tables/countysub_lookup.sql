@@ -1,12 +1,7 @@
    set search_path=tiger,public;
    set client_min_messages = error;
   DROP TABLE IF EXISTS countysub_lookup cascade;
-CREATE TABLE
-       countysub_lookup (
-							 statefp VARCHAR(2), state VARCHAR(2), countyfp VARCHAR(3), county VARCHAR(100), cousubfp
-							 VARCHAR(5), name VARCHAR(100), PRIMARY KEY (statefp, countyfp, cousubfp)
-       );
-INSERT INTO countysub_lookup
+CREATE TABLE countysub_lookup AS
 SELECT cs.statefp as statefp
      , sl.abbrev as state
      , cs.countyfp as countyfp
@@ -31,3 +26,9 @@ CREATE INDEX countysub_lookup_name_idx
     ON countysub_lookup (soundex(name));
 CREATE INDEX countysub_lookup_state_idx
     ON countysub_lookup (state);
+CREATE INDEX countysub_lookup_statefp_idx
+    ON countysub_lookup (statefp);
+CREATE INDEX countysub_lookup_countyfp_idx
+    ON countysub_lookup (countyfp);
+CREATE INDEX countysub_lookup_cousubfp_idx
+    ON countysub_lookup (cousubfp);
