@@ -185,6 +185,7 @@ PROCESSED_SHPS=()
 function loadshp () {
   local FILE="$1"
   local TABLE="$2"
+  local BASEDIR=`dirname $FILE`
   local BASESHP=`basename $FILE .shp`
   local CMD_EXTRAS=''
   local NEWFILE=''
@@ -241,13 +242,19 @@ function loadshp () {
     | (echo set client_min_messages=error\; ;cat -) \
     | ${PSQL_CMD_NULL} \
     | egrep -v '^(INSERT INTO|BEGIN;|END;)' # you really don't want to see a zillion insert statements
+
     addcols "$SCHEMA" "$TABLE"
+   local rmthis=''
+   for rmthis in ${BASEDIR}/${BASESHP}.* ${BASEDIR}/`basename ${NEWFILE} .shp`.*; do
+     test -f ${rmthis} && note removing ${rmthis} && ${RM} ${rmthis}
+   done
 }
 
 PROCESSED_DBFS=()
 function loaddbf () {
   local FILE="$1"
   local TABLE="$2"
+  local BASEDIR=`dirname $FILE`
   local BASESHP=`basename $FILE .dbf`
   local TABLEACTION='-c'
   local EXISTS='true'
@@ -286,7 +293,12 @@ function loaddbf () {
     | (echo set client_min_messages=error\; ;cat -) \
     | ${PSQL_CMD_NULL} \
     | egrep -v '^(INSERT INTO|BEGIN;|END;)' # you really don't want to see a zillion insert statements
+
   addcols "$SCHEMA" "$TABLE"
+  local rmthis=''
+  for rmthis in ${BASEDIR}/${BASESHP}.*; do
+    test -f ${rmthis} && note removing ${rmthis} && ${RM} ${rmthis}
+  done
 }
 
 function create_schema () {
