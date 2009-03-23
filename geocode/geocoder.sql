@@ -1,4 +1,4 @@
-set search_path=public,tiger;
+set search_path=tiger,public;
 \i rate_attributes.sql
 \i includes_address.sql
 \i interpolate_from_address.sql
