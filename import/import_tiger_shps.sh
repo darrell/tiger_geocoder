@@ -182,19 +182,19 @@ function addcols () {
   #${PSQL_CMD_NULL} -c "CREATE INDEX ${TABLE}_${STATEFP}_idx ON ${SCHEMA}.${TABLE} USING btree($STATEFP);"
 
   if [ ${TABLE} = 'featnames' ]; then
-    ${PSQL_CMD} -t -c "\d ${SCHEMA}.${TABLE}"| egrep -q "^ +fullname_snd "
+    ${PSQL_CMD} -t -c "\d ${SCHEMA}.${TABLE}"| egrep -q "^ +street_snd "
     if [ $? -eq 1 ]; then
       ${PSQL_CMD_NULL} <<EOT
-        ALTER TABLE ${SCHEMA}.${TABLE} ADD  COLUMN fullname_snd varchar(10);
-        CREATE INDEX ${TABLE}_fullname_snd_idx ON ${SCHEMA}.${TABLE} USING btree(fullname_snd);
+        ALTER TABLE ${SCHEMA}.${TABLE} ADD  COLUMN street_snd varchar(10);
+        CREATE INDEX ${TABLE}_street_snd_idx ON ${SCHEMA}.${TABLE} USING btree(street_snd);
         create or replace function ${SCHEMA}.update_sound_match() returns trigger as '
           BEGIN 
-            NEW.fullname_snd=metaphone(NEW.fullname,10); 
+            NEW.street_snd=metaphone(NEW.fullname,10); 
             RETURN NEW; 
           END; 
        ' language plpgsql;
       create trigger update_sound_match BEFORE UPDATE ON  ${SCHEMA}.${TABLE} FOR EACH ROW EXECUTE PROCEDURE  ${SCHEMA}.update_sound_match();
-      update  ${SCHEMA}.${TABLE} set fullname_snd='1' where fullname_snd is null;
+      update  ${SCHEMA}.${TABLE} set street_snd='1' where street_snd is null;
 
 EOT
     fi
@@ -257,6 +257,7 @@ function loadshp () {
     ${TABLEACTION} \
     -s $SRID \
     -W ${ENCODING} \
+    -D \
     "${NEWFILE}" \
     "${SCHEMA}.${TABLE}"\
     ${CMD_EXTRAS} \
@@ -309,6 +310,7 @@ function loaddbf () {
     ${TABLEACTION} \
     -W ${ENCODING} \
     -n \
+    -D \
     "${FILE}" \
     "${SCHEMA}.${TABLE}" \
     | (echo set client_min_messages=error\; ;cat -) \
@@ -448,7 +450,7 @@ if [ "${COUNTIES}" = 'none' ]; then
 fi
 
 # how do we call psql
-PSQL_CMD_ARGS="-U ${DBUSER} -d ${DB} -h ${HOST} -p ${DBPORT} -q -1 --set VERBOSITY=terse --set ON_ERROR_STOP=true"
+PSQL_CMD_ARGS="-U ${DBUSER} -d ${DB} -h ${HOST} -p ${DBPORT} -1 -q --set VERBOSITY=terse --set ON_ERROR_STOP=true"
 if [ "${DEBUG}" = 'true' ]; then
   PSQL_CMD_EXTRAS='-e'
 else
