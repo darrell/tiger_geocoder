@@ -4,10 +4,11 @@ SET search_path TO tiger,public;
 set client_min_messages=error;
 \set ON_ERROR_STOP true
 
+create schema tiger;
+
 begin;
 
-DROP schema if exists tiger cascade;
-create schema tiger;
+--DROP schema if exists tiger cascade;
 
 -- Type used to pass around a normalized address between functions
 -- Note census defines a street name as: 
