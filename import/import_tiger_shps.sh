@@ -177,9 +177,28 @@ function addcols () {
   fi
   # add statefp check everywhere
 
-  ${PSQL_CMD_NULL} -c "ALTER TABLE ${SCHEMA}.${TABLE} DROP CONSTRAINT ${TABLE}_statefp_check;"
-  ${PSQL_CMD_NULL} -c "ALTER TABLE ${SCHEMA}.${TABLE} ADD  CONSTRAINT ${TABLE}_statefp_check CHECK (${STATEFP} = '${FIPS}');"
+  ${PSQL_CMD_NULL} -c "ALTER TABLE ${SCHEMA}.${TABLE} DROP CONSTRAINT ${TABLE}_${STATEFP}_check;"
+  ${PSQL_CMD_NULL} -c "ALTER TABLE ${SCHEMA}.${TABLE} ADD  CONSTRAINT ${TABLE}_${STATEFP}_check CHECK (${STATEFP} = '${FIPS}');"
   #${PSQL_CMD_NULL} -c "CREATE INDEX ${TABLE}_${STATEFP}_idx ON ${SCHEMA}.${TABLE} USING btree($STATEFP);"
+
+  if [ ${TABLE} = 'featnames' ]; then
+    ${PSQL_CMD} -t -c "\d ${SCHEMA}.${TABLE}"| egrep -q "^ +fullname_snd "
+    if [ $? -eq 1 ]; then
+      ${PSQL_CMD_NULL} <<EOT
+        ALTER TABLE ${SCHEMA}.${TABLE} ADD  COLUMN fullname_snd varchar(10);
+        CREATE INDEX ${TABLE}_fullname_snd_idx ON ${SCHEMA}.${TABLE} USING btree(fullname_snd);
+        create or replace function ${SCHEMA}.update_sound_match() returns trigger as '
+          BEGIN 
+            NEW.fullname_snd=metaphone(NEW.fullname,10); 
+            RETURN NEW; 
+          END; 
+       ' language plpgsql;
+      create trigger update_sound_match BEFORE UPDATE ON  ${SCHEMA}.${TABLE} FOR EACH ROW EXECUTE PROCEDURE  ${SCHEMA}.update_sound_match();
+      update  ${SCHEMA}.${TABLE} set fullname_snd='1' where fullname_snd is null;
+
+EOT
+    fi
+  fi
 
 }
 
@@ -206,7 +225,7 @@ function loadshp () {
   fi
 
   if    [ "$DROP" = "true" -a "${DID_THIS_TABLE}" = 'false'  -a ${EXISTS} = "true" ]; then
-    TABLEACTION="-d -c"
+    TABLEACTION="-d"
     note Loading ${FILE} into dropped and created ${SCHEMA}.${TABLE}
   elif [  ${EXISTS} = "true" -a \( "${DID_THIS_TABLE}" = "true" -o  "$DROP" = "false" \)  ]; then
     TABLEACTION="-a"
@@ -272,7 +291,7 @@ function loaddbf () {
   fi
 
   if   [ "$DROP" = "true" -a "${DID_THIS_TABLE}" = 'false'  -a ${EXISTS} = "true" ]; then
-    TABLEACTION="-d -c"
+    TABLEACTION="-d"
     note Loading ${FILE} into dropped and created ${SCHEMA}.${TABLE}
   elif [  ${EXISTS} = "true" -a \( "${DID_THIS_TABLE}" = "true" -o  "$DROP" = "false" \)  ]; then
     TABLEACTION="-a"
