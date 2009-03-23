@@ -176,9 +176,11 @@ function addcols () {
     ${PSQL_CMD_NULL} -c "ALTER TABLE ${SCHEMA}.${TABLE} ADD COLUMN ${STATEFP} varchar(2) not null DEFAULT ('${FIPS}');"
   fi
   # add statefp check everywhere
-  ${PSQL_CMD_NULL} -c "ALTER TABLE ${SCHEMA}.${TABLE} ADD  CHECK (${STATEFP} = '${FIPS}');"
+
+  ${PSQL_CMD_NULL} -c "ALTER TABLE ${SCHEMA}.${TABLE} DROP CONSTRAINT ${TABLE}_statefp_check;"
+  ${PSQL_CMD_NULL} -c "ALTER TABLE ${SCHEMA}.${TABLE} ADD  CONSTRAINT ${TABLE}_statefp_check CHECK (${STATEFP} = '${FIPS}');"
   #${PSQL_CMD_NULL} -c "CREATE INDEX ${TABLE}_${STATEFP}_idx ON ${SCHEMA}.${TABLE} USING btree($STATEFP);"
-  
+
 }
 
 PROCESSED_SHPS=()
