@@ -51,8 +51,8 @@ BEGIN
   END IF;
   result := result + levenshtein_ignore_case(cull_null($5), cull_null($6)) *
       typeWeight;
-  result := result + levenshtein_ignore_case(cull_null($7), cull_null($7)) *
+  result := result + levenshtein_ignore_case(cull_null($7), cull_null($8)) *
       directionWeight;
   return result;
 END;
-$_$ LANGUAGE plpgsql IMMUTABLE STRICT;
+$_$ LANGUAGE plpgsql IMMUTABLE;
