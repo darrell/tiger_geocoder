@@ -19,7 +19,6 @@ CREATE OR REPLACE FUNCTION
   address_variants(in_addr norm_addy, 
                    OUT out_addy norm_addy,
                    OUT relevance double precision) 
---CREATE OR REPLACE FUNCTION address_variants(in_addr norm_addy) 
   RETURNS SETOF record AS $_$
   DECLARE
     similar record;
@@ -64,28 +63,15 @@ CREATE OR REPLACE FUNCTION
       NULL::varchar(5) as zipl_b,
       NULL::varchar(5) as zipr_b,
       levenshtein(a.fullname,b.fullname),
-      --,count(*)
       case WHEN a.tlid=b.tlid THEN true ELSE false END as exact
       FROM featnames AS a 
       LEFT JOIN featnames AS b 
---      ON (a.tlid=b.tlid OR metaphone(a.name, 7)=metaphone(b.name, 7))
-      ON (metaphone(a.fullname, 10)=metaphone(b.fullname, 10) or a.tlid=b.tlid)
---      ON (a.tlid=b.tlid and a.linearid<>b.linearid
---           AND 
---          (a.predirabrv,a.pretypabrv,a.prequalabr,a.name,a.sufdirabrv,a.suftypabrv,a.sufqualabr)
---          <> 
---          (b.predirabrv,b.pretypabrv,b.prequalabr,b.name,b.sufdirabrv,b.suftypabrv,b.sufqualabr)
---          )
+      ON (a.street_snd=b.street_snd or a.tlid=b.tlid)
       LEFT JOIN edges as e ON (a.tlid=e.tlid)
       LEFT JOIN state as st on (a.statefp=st.statefp)
       WHERE b.name is not null
       AND (a.name ilike in_addr.streetName)
       AND NOT a.fullname ILIKE b.fullname;
---     GROUP BY 
---      a.name, a.tlid,b.tlid,a.predirabrv,a.pretypabrv,a.prequalabr,a.sufdirabrv,
---      a.suftypabrv, a.sufqualabr, a.fullname,st.stusps,e.zipr,e.zipl,
---      b.predirabrv,b.pretypabrv,b.prequalabr,b.name,b.sufdirabrv,b.suftypabrv,b.sufqualabr,
---      b.fullname;
 
      UPDATE addr_var_temp 
             SET zipr_b=edges.zipr,zipl_b=edges.zipl 
@@ -93,7 +79,7 @@ CREATE OR REPLACE FUNCTION
             WHERE edges.tlid=tlid_b 
               AND edges.zipr IS NOT NULL
               AND edges.zipl IS NOT NULL;
-    --update addr_var_temp set zipr_b='95201',zipl_a='95202' where name_b='Fountaingrove';
+
     RAISE DEBUG 'in_addr: %', in_addr;
     <<addrs>>
     FOR similar IN SELECT 
