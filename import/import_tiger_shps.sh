@@ -554,9 +554,9 @@ if [ "${DO_MERGE}" = 'true' ]; then
     --drop sequence if exists ${table}_gid_seq; create sequence ${table}_gid_seq;
     --alter table ${table} drop constraint ${table}_statefp_check;
     --alter table ${table} alter column gid set default nextval('${table}_gid_seq'::regclass);
-    drop view if exists ${table} cascade;
+    drop view if exists ${SCHEMA_PREFIX}.${table} cascade;
     --\set ECHO queries
-    create view ${table} (${COLS}) AS ${VIEW};
+    create view ${SCHEMA_PREFIX}.${table} (${COLS}) AS ${VIEW};
 EOT
       TYPE=`${PSQL_CMD} -t -c "select type from geometry_columns where f_table_name='${table}' limit 1" | egrep '(POLY|LINE)'| sed 's/ //g'`
 
