@@ -1,0 +1,57 @@
+# first pass at grammar for implementing a more formal
+# address parser. Elements in curly braces will presumably 
+# come from DB lookup tables.
+# (how to express beginning of line in BNF?)
+# normalize(location text)
+
+<location> ::== (<street> <intersectionsep> <street> | 
+                <address>? <addrsep> <place>? <addrsep> <addrstate>? <addrsep> <zipcode>?);
+
+<address> ::== <housenumber>? <whitespace> <street>;
+
+<street> ::== <predir>? <whitespace> <pretyp>? <whitespace> <prequal>? <whitespace> 
+             <streetname> <whitespace> 
+             <suftype>? <whitespace> <sufdir>? <whitespace>  <sufqual>?;
+             
+# cope with michigan rural addresses?
+<house> :== <housenumber> <whitespace>+;
+<housenumber> :== 'G'*<digit>+;
+
+<predir> ::== {List of predirs};
+<pretype> ::== {List of pretypes};
+<prequal> ::== {List of prequals};
+<streetname> ::== <word>+;
+<suftype> ::== {List of suftypes};
+<sufdir> ::== {List of sufdirs};
+<sufqual> ::== {List of sufquals};
+
+<place> ::== <addrsep> <placename>;
+<placename> ::== <word> <wordspace>*;
+
+<state> ::== <addrsep> <statename>;
+<state> ::== {List of state names};
+
+<zipcode> ::== <zip5><zipsuf>?;
+
+<zip5> ::== <digit><digit><digit><digit><digit>;
+
+<zipsuf> ::== <zipsep>?<zip4>
+<zip4> ::== <digit><digit><digit><digit><digit>;
+
+<zipsep> ::== "+" | "-";
+
+<digit> ::== 1/2/3/4/5/6/7/8/9/0
+<wordspace> ::== <whitespace>+<word>
+
+<word> ::== [a-z.-]+;
+
+<intersectionsep> ::== <whitespace>+ <and> <whitespace>+;
+<and> ::== '&' | 'and';
+
+<addrsep> ::== <addrsep-char>+
+
+<addrsep-char> ::== <whitespace>+| <whitespace>* ',' <whitespace>*;
+
+<whitespace> ::==  <whitespace-char>+ ;
+<whitespace-char> ::== "[beginning of line]" | " " | "\t" | "\r" | "\n" ;
+
