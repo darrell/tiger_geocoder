@@ -4,8 +4,10 @@
 # (how to express beginning of line in BNF?)
 # normalize(location text)
 
-<location> ::== (<street> <intersectionsep> <street> | 
-                <address>? <addrsep> <place>? <addrsep> <addrstate>? <addrsep> <zipcode>?);
+<location> ::== (<street> <intersectionsep> <street>) | 
+                (<address>? <addrsep> <place>? <addrsep> 
+                 <unit>? <addrsep> <addrstate>? <addrsep>
+                 <zipcode>?);
 
 <address> ::== <housenumber>? <whitespace> <street>;
 
@@ -28,6 +30,10 @@
 <place> ::== <addrsep> <placename>;
 <placename> ::== <word> <wordspace>*;
 
+<unit> ::== <unittype> <whitespace>+ <unitno>;
+<unittype> ::== {list of possible unit types};
+<unitno> ::== <alphanum>+| "#";
+
 <state> ::== <addrsep> <statename>;
 <state> ::== {List of state names};
 
@@ -44,6 +50,8 @@
 <wordspace> ::== <whitespace>+<word>
 
 <word> ::== [a-z.-]+;
+
+<alphanum> ::== <digit>+|<word>+;
 
 <intersectionsep> ::== <whitespace>+ <and> <whitespace>+;
 <and> ::== '&' | 'and';
