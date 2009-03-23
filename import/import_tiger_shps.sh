@@ -83,7 +83,7 @@ DEBUG='false'
 QUIET='false'
 
 # create index on these fields
-INDEXES=(statefp placefp countyfp cousubfp name street fullstreet arid tlid linearid fullname)
+INDEXES=(statefp placefp countyfp cousubfp name street fullstreet arid tlid linearid fullname tfidl tfidr)
 
 # these fields get indexes
 
@@ -336,7 +336,7 @@ function usage () {
                    setting this to 'none' skips loading of county level files.
 
   -I               (Re)create indexes for columns.
-                   (default: ${INDEXES
+                   (default: ${INDEXES[*]})
 
   -X                Drop schemas before loading the data.
                     Tables will not be dropped individually, since they will 
