@@ -9,15 +9,17 @@
                  <unit>? <addrsep> <addrstate>? <addrsep>
                  <zipcode>?);
 
-<address> ::== <housenumber>? <whitespace> <street>;
+<address> ::== <house>? <whitespace> <street>;
 
 <street> ::== <predir>? <whitespace> <pretyp>? <whitespace> <prequal>? <whitespace> 
              <streetname> <whitespace> 
              <suftype>? <whitespace> <sufdir>? <whitespace>  <sufqual>?;
              
 # cope with michigan rural addresses?
-<house> :== <housenumber> <whitespace>+;
+<house> :== (<housenumber>|<houserange>) <whitespace>+;
 <housenumber> :== 'G'*<digit>+;
+<houserange> ::== <housenumber>-<housenumber>;
+
 
 <predir> ::== {List of predirs};
 <pretype> ::== {List of pretypes};
