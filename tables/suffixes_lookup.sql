@@ -1,3 +1,4 @@
+set search_path=tiger,public;
 CREATE OR REPLACE VIEW suffixes_lookup(name,abbrev) as 
   SELECT DISTINCT name,abbrev FROM direction_lookup 
   UNION ALL
