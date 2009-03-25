@@ -22,19 +22,29 @@ CREATE OR REPLACE FUNCTION
   RETURNS SETOF record AS $_$
   DECLARE
     similar record;
-    total integer;
     ziplen integer;
+    stateAbrv  text;
+    my_statefp text;
+    stmt text;
   BEGIN
     IF in_addr.streetName IS NULL THEN
       RETURN;
     END IF;
     
+    IF in_addr.stateAbbrev IS NOT NULL THEN
+      my_statefp := statefp from state where stusps ilike in_addr.stateAbbrev;
+    END IF;
+    stateAbrv:=upper(in_addr.stateAbbrev);
+
+    SET constraint_exclusion=on;
+    
     DROP TABLE IF EXISTS addr_var_temp;
-    CREATE TEMP TABLE addr_var_temp
+    
+    stmt := $$ CREATE TEMP TABLE addr_var_temp
     AS SELECT DISTINCT ON 
      (a.predirabrv,a.pretypabrv,a.prequalabr,
      a.name,a.sufdirabrv,a.suftypabrv,a.sufqualabr,
-     st.stusps,
+     state, a.statefp,
      b.fullname,b.predirabrv,b.pretypabrv,b.prequalabr, 
      b.name,b.sufdirabrv,b.suftypabrv,b.sufqualabr)
       a.fullname as fullname_a,
@@ -43,11 +53,12 @@ CREATE OR REPLACE FUNCTION
       a.pretypabrv as pretypabrv_a,
       a.prequalabr as prequalabr_a,
       a.name as name_a,
-      metaphone(a.fullname, 10) as snd_a,
+      a.street_snd as street_snd_a,
       a.sufdirabrv as sufdirabrv_a,
       a.suftypabrv as suftypabrv_a,
       a.sufqualabr as sufqualabr_a,
-      st.stusps as state,
+      $$  || quote_literal(stateAbrv) || $$ as state,
+      a.statefp,
       e.zipl as zipl_a,
       e.zipr as zipr_a,
       b.tlid as tlid_b,
@@ -56,7 +67,7 @@ CREATE OR REPLACE FUNCTION
       b.pretypabrv as pretypabrv_b,
       b.prequalabr as prequalabr_b,
       b.name as name_b,
-      metaphone(b.fullname,10) as snd_b,
+      b.street_snd as street_snd_b,
       b.sufdirabrv as sufdirabrv_b,
       b.suftypabrv as suftypabrv_b,
       b.sufqualabr as sufqualabr_b,
@@ -66,19 +77,27 @@ CREATE OR REPLACE FUNCTION
       case WHEN a.tlid=b.tlid THEN true ELSE false END as exact
       FROM featnames AS a 
       LEFT JOIN featnames AS b 
-      ON (a.street_snd=b.street_snd or a.tlid=b.tlid)
-      LEFT JOIN edges as e ON (a.tlid=e.tlid)
-      LEFT JOIN state as st on (a.statefp=st.statefp)
+      --statefp is used by constraint exclusion, you *really* want to have it
+      ON ((a.street_snd=b.street_snd or a.tlid=b.tlid) AND a.statefp=b.statefp) 
+      LEFT JOIN edges as e ON (a.tlid=e.tlid and a.statefp=e.statefp) 
       WHERE b.name is not null
-      AND (a.name ilike in_addr.streetName)
-      AND NOT a.fullname ILIKE b.fullname;
+      AND NOT a.fullname ILIKE b.fullname
+      AND a.name ilike $$ || quote_literal(in_addr.streetName);
 
+    IF stateAbrv IS NOT NULL THEN
+      stmt := stmt || ' AND a.statefp=' || quote_literal(my_statefp);
+    END IF;
+
+    RAISE DEBUG 'stmt: %', stmt;
+    EXECUTE stmt;
+      
      UPDATE addr_var_temp 
             SET zipr_b=edges.zipr,zipl_b=edges.zipl 
             FROM edges 
             WHERE edges.tlid=tlid_b 
               AND edges.zipr IS NOT NULL
-              AND edges.zipl IS NOT NULL;
+              AND edges.zipl IS NOT NULL
+              AND edges.statefp = addr_var_temp.statefp;
 
     RAISE DEBUG 'in_addr: %', in_addr;
     <<addrs>>
@@ -93,7 +112,7 @@ CREATE OR REPLACE FUNCTION
               exact,levenshtein
              FROM addr_var_temp
              -- oh for the want of a case insensitive "is distinct"
-             WHERE ((predirabrv_a IS NULL )--AND in_addr.preDirAbbrev IS NULL) 
+             WHERE ((predirabrv_a IS NULL AND in_addr.preDirAbbrev IS NULL) 
                       OR predirabrv_a ilike in_addr.preDirAbbrev) 
                   AND
                    ((pretypabrv_a IS NULL AND in_addr.preTypeAbbrev IS NULL) 
@@ -109,19 +128,18 @@ CREATE OR REPLACE FUNCTION
                       OR suftypabrv_a ilike in_addr.streetTypeAbbrev) 
                   AND
                     ((sufqualabr_a IS NULL AND in_addr.streetQualAbbrev IS NULL) 
-                      OR sufqualabr_a ilike in_addr.streetQualAbbrev) 
+                      OR sufqualabr_a ilike in_addr.streetQualAbbrev)
                   AND
-                    name_a ilike in_addr.streetName 
-                  AND
-                    state ilike in_addr.stateAbbrev 
+                    name_a ilike in_addr.streetName
+
       LOOP
         RAISE DEBUG 'got: %', similar;
         ziplen := array_upper(similar.zips,1);
         IF ziplen IS NULL THEN
-          similar.zips:=array_append(similar.zips, in_addr.zip);
+          similar.zips:=array_append(similar.zips, in_addr.zip::varchar);
           ziplen := 1;
         END IF;
-        FOR i IN 1..ziplen LOOP
+        FOR anInt IN 1..ziplen LOOP
           out_addy:=similar.addr;
           IF similar.exact OR similar.levenshtein=0 THEN
             relevance := 1.0;
@@ -130,7 +148,7 @@ CREATE OR REPLACE FUNCTION
             raise DEBUG 'here with: %', relevance;
           --relevance:=1.0;
           END IF;
-           out_addy.zip := similar.zips[i];
+           out_addy.zip := similar.zips[anInt];
            IF out_addy.zip <> in_addr.zip AND NOT similar.exact THEN
             IF substr(out_addy.zip,1,3) = substr(in_addr.zip,1,3) THEN
               relevance:=relevance-.1;
