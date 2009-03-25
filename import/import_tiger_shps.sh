@@ -83,7 +83,7 @@ DEBUG='false'
 QUIET='false'
 
 # create index on these fields
-INDEXES=(statefp placefp countyfp cousubfp name street fullstreet arid tlid linearid fullname tfidl tfidr)
+INDEXES=(statefp placefp countyfp cousubfp name street fullstreet arid tlid linearid fullname tfidl tfidr street_snd)
 
 # these fields get indexes
 
@@ -97,13 +97,13 @@ function table_from_filename () {
 
 function error () {
   echo '' >&2
-  echo "$1" >&2
+  echo "$@" >&2
   echo '' >&2
 }
 
 function debug () {
   if [ ${DEBUG} = "true" ]; then
-    echo "\* $@" >&2
+    echo "* $@" >&2
   fi
 }
 function note () {
@@ -186,14 +186,13 @@ function addcols () {
     if [ $? -eq 1 ]; then
       ${PSQL_CMD_NULL} <<EOT
         ALTER TABLE ${SCHEMA}.${TABLE} ADD  COLUMN street_snd varchar(10);
-        CREATE INDEX ${TABLE}_street_snd_idx ON ${SCHEMA}.${TABLE} USING btree(street_snd);
         create or replace function ${SCHEMA}.update_sound_match() returns trigger as '
           BEGIN 
             NEW.street_snd=metaphone(NEW.fullname,10); 
             RETURN NEW; 
           END; 
        ' language plpgsql;
-      create trigger update_sound_match BEFORE UPDATE ON  ${SCHEMA}.${TABLE} FOR EACH ROW EXECUTE PROCEDURE  ${SCHEMA}.update_sound_match();
+      create trigger update_sound_match BEFORE UPDATE OR INSERT ON ${SCHEMA}.${TABLE} FOR EACH ROW EXECUTE PROCEDURE  ${SCHEMA}.update_sound_match();
       update  ${SCHEMA}.${TABLE} set street_snd='1' where street_snd is null;
 
 EOT
@@ -338,6 +337,19 @@ function create_schema () {
 EOT
 }
 
+PARTITIONED=()
+function create_partitioned_table () {
+  local SOURCE_SCHEMA="$1"
+  local TABLE="$2"
+
+  ${PSQL_CMD} -t -c "\dt ${SCHEMA_PREFIX}.${TABLE}" | egrep -q "${SCHEMA_PREFIX} .* ${TABLE} "
+  if [ $? -ne 0 ]; then
+    ${PSQL_CMD_NULL} <<EOT
+     CREATE TABLE ${SCHEMA_PREFIX}.${TABLE} (LIKE ${SOURCE_SCHEMA}.${TABLE});
+EOT
+  fi
+}
+
 function usage () {
   cat >&2 <<EOT  
   -h               This message.
@@ -392,7 +404,7 @@ EOT
   exit 1;
 }
 
-while getopts  "n:s:c:H:u:d:DB:b:E:S:hvXr:R:qp:iMI" flag; do
+while getopts  "n:s:c:H:u:d:DB:b:E:S:hvXr:R:qp:iMIm" flag; do
   case "$flag" in
     n)  NATIONAL="true"; NATLAYERS="$OPTARG";;
     s)  STATELVL="true"; STATES="$OPTARG";;
@@ -415,14 +427,20 @@ while getopts  "n:s:c:H:u:d:DB:b:E:S:hvXr:R:qp:iMI" flag; do
     q)  QUIET="true";;
     0)  SKIP00="false";;
     M)  DO_MERGE="true";;
+    m)  DO_UNMERGE="true";;
     [?]) usage ;;
   esac
 done
-if [ "${DO_MERGE}" = 'true' -o "${CREATE_INDEXES}" = 'true' ]; then
+if [ "${DO_MERGE}" = 'true' -o "${CREATE_INDEXES}" = 'true' -o "${DO_UNMERGE}" = 'true' ]; then
   NATIONAL='false'
   STATELVL='false'
   COUNTYLVL='false'
 fi
+if [ "${DO_MERGE}" = 'true' -a "${DO_UNMERGE}" = 'true' ]; then
+  error "You cannot specify both merge and unmerge"
+  usage
+fi
+
 #
 #
 # do some initial setup
@@ -549,55 +567,57 @@ rm -rf ${TMPDIR}
 
 if [ "${DO_MERGE}" = 'true' ]; then
   create_schema ${SCHEMA_PREFIX}
-  MYSCHEMAS=`${PSQL_CMD} -t -c '\\dn' | egrep "^ +${SCHEMA_PREFIX}_[0-9u][0-9s]" | sed -e 's/|.*//'`
+  MYSCHEMAS=`${PSQL_CMD} -t -c '\\dn' | egrep "^ +${SCHEMA_PREFIX}_${STATES}" | sed -e 's/|.*//'`
+  if [ "${STATES}" = '[0-9][0-9]' ]; then
+    MYSCHEMAS="${MYSCHEMAS} ${SCHEMA_PREFIX}_us"
+  fi
   TABLES=`(for schema in $MYSCHEMAS; do
     ${PSQL_CMD} -t -c "\\dt ${schema}."
   done) | cut -d\| -f 2 | sort -u`
   note Found tables: ${TABLES}
   for table in $TABLES; do
-      note Processing table ${table}...
-    VIEW=''
+    note Processing table ${table}...
     for schema in ${MYSCHEMAS}; do
-      note "   Processing schema $schema..."
+      debug "   Processing schema $schema..."
       ${PSQL_CMD} -t -c "\dt ${schema}.${table}" | egrep -q "${schema} .* ${table} "
-      if [ $? -eq 0 ]; then
-        # it's OK if we hit this a bunch, right?
-        COLS=`${PSQL_CMD} -c "\\copy (select * from ${schema}.${table} limit 1) TO STDOUT CSV HEADER" | head -1 | sed -e 's/^gid,//' -e 's/,/","/g'`
-        COLS="\"$COLS\""
-        VIEW="${VIEW} SELECT ${COLS} from $schema.$table UNION ALL "
-#        cat<<EOT | ${PSQL_CMD_NULL}
-#          DROP TABLE IF EXISTS ${table} cascade;
-#          CREATE TABLE ${table} (like $schema.$table including indexes including constraints);
-#EOT
+      if [ $? -eq 0 ]; then # table exists
+        create_partitioned_table "${schema}" "${table}"
+        ${PSQL_CMD_NULL} <<EOT
+        alter table ${schema}.${table} INHERIT ${SCHEMA_PREFIX}.${table};
+EOT
       fi
     done
-    VIEW=`echo $VIEW| sed -e 's/UNION ALL *$/;/'`
-    note creating view ${SCHEMA_PREFIX}.${table}
-    cat<<EOT | ${PSQL_CMD_NULL}
-    --drop sequence if exists ${table}_gid_seq; create sequence ${table}_gid_seq;
-    --alter table ${table} drop constraint ${table}_statefp_check;
-    --alter table ${table} alter column gid set default nextval('${table}_gid_seq'::regclass);
-    drop view if exists ${SCHEMA_PREFIX}.${table} cascade;
-    --\set ECHO queries
-    create view ${SCHEMA_PREFIX}.${table} (${COLS}) AS ${VIEW};
-EOT
-      TYPE=`${PSQL_CMD} -t -c "select type from geometry_columns where f_table_name='${table}' limit 1" | egrep '(POLY|LINE)'| sed 's/ //g'`
+  done
+fi
 
-      if [ -z "${TYPE}" ]; then
-        continue
-      else
-        echo ${TYPE} > /dev/null
-        cat<<EOT | ${PSQL_CMD_NULL}
-        --create index ${table}_the_geom_idx on ${SCHEMA_PREFIX}.${table} using gist(the_geom gist_geometry_ops);
-        delete from geometry_columns where f_table_name='${table}' and f_table_schema='${SCHEMA_PREFIX}';
-        insert into geometry_columns values ('','${SCHEMA_PREFIX}','${table}','the_geom',2,${SRID},'${TYPE}');
+if [ "${DO_UNMERGE}" = 'true' ]; then
+  MYSCHEMAS=`${PSQL_CMD} -t -c '\\dn' | egrep "^ +${SCHEMA_PREFIX}_${STATES}" | sed -e 's/|.*//'`
+  if [ "${STATES}" = '[0-9][0-9]' ]; then
+    MYSCHEMAS="${MYSCHEMAS} ${SCHEMA_PREFIX}_us"
+  fi
+  TABLES=`(for schema in $MYSCHEMAS; do
+    ${PSQL_CMD} -t -c "\\dt ${schema}."
+    done) | cut -d\| -f 2 | sort -u`
+  note Found tables: ${TABLES}
+  for table in $TABLES; do
+    note Un-processing table ${table}...
+    for schema in ${MYSCHEMAS}; do
+      debug "Un-processing schema $schema..."
+      ${PSQL_CMD} -t -c "\dt ${schema}.${table}" | egrep -q "${schema} .* ${table} "
+      if [ $? -eq 0 ]; then # table exists
+        ${PSQL_CMD_NULL} <<EOT
+        alter table ${schema}.${table} NO INHERIT ${SCHEMA_PREFIX}.${table};
 EOT
-      fi  
+      fi
+    done
   done
 fi
 
 if [ "${CREATE_INDEXES}" = 'true' ]; then
-  MYSCHEMAS=`${PSQL_CMD} -t -c '\\dn' | egrep "^ +${SCHEMA_PREFIX}_[0-9u][0-9s]" | sed -e 's/|.*//'`
+  MYSCHEMAS=`${PSQL_CMD} -t -c '\\dn' | egrep "^ +${SCHEMA_PREFIX}_${STATES}" | sed -e 's/|.*//'`
+  if [ "${STATES}" = '[0-9][0-9]' ]; then
+    MYSCHEMAS="${MYSCHEMAS} ${SCHEMA_PREFIX}_us"
+  fi
   for schema in ${MYSCHEMAS}; do
    TABLES=`${PSQL_CMD} -t -c "\\dt ${schema}." |cut -d\| -f 2 | sort -u`
 
