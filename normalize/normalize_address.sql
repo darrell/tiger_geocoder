@@ -82,7 +82,6 @@ DECLARE
   matchedInternal boolean := false;
 BEGIN
   result.parsed := FALSE;
-  debug_flag := true;
   rawInput := trim(in_rawInput);
 
   IF rawInput IS NULL THEN
@@ -91,9 +90,7 @@ BEGIN
 
   ws := E'[ ,\t\n\f\r^]';
 
-  IF debug_flag THEN
-    raise notice 'input: %', rawInput;
-  END IF;
+  raise debug 'input: %', rawInput;
 
 
   addrArray:=array_compact(regexp_split_to_array(rawInput,ws||'+'));
