@@ -1,3 +1,5 @@
+Add the ability to limit the search to within a passed geometry.
+
 --
 Address normalization would work better if we had an exhaustive
 list of possible values in the pre* and suf* fields of featnames
