@@ -28,6 +28,7 @@ def getStates():
   return Or(states.values()).setResultsName('state')
 
 def test(p,s,expected):
+  failed=False
   try:
       result = p.parseString(s)
   except ParseException, pe:
@@ -42,9 +43,11 @@ def test(p,s,expected):
         if result.get(k) == v:
           print "   '%s' -> '%s' CORRECT" % (k,v)
         else:
+          failed=True
           print "   '%s' -> '%s' ***WRONG***  expected '%s'" % (k,result.get(k),v)
-          print "   ***TOKENS*** are %s" % result.asDict()
-          #print result.asList
+      if failed:
+        print "   TOKENS are %s" % result.asDict()
+        #print result.asList
           
         #else:
           #print "***WRONG***, expected %s for %s" % (key,value)
@@ -100,4 +103,3 @@ test(address, "Oregon City, KS 12345-1234", {'place': 'Oregon City','state': 'KS
 test(address, "Oregon City, 12345-1234", {'place': 'Oregon City', 'zipcode': '12345-1234'})
 test(address, "Oregon City, Oregon, 12345-1234", {'place': 'Oregon City', 'zipcode': '12345-1234'})
 test(address, "Oregon, 12345-1234", {'state': 'OR', 'zipcode': '12345-1234'})
-
