@@ -97,5 +97,7 @@ test(address, "Foo City, KS 12345-1234",{'place': 'Foo City','state': 'KS', 'zip
 test(address, "Foo City, 12345-1234",{'place': 'Foo City', 'zipcode': '12345-1234'})
 #address.setDebug(True)
 test(address, "Oregon City, KS 12345-1234", {'place': 'Oregon City','state': 'KS', 'zipcode': '12345-1234'})
-
+test(address, "Oregon City, 12345-1234", {'place': 'Oregon City', 'zipcode': '12345-1234'})
+test(address, "Oregon City, Oregon, 12345-1234", {'place': 'Oregon City', 'zipcode': '12345-1234'})
+test(address, "Oregon, 12345-1234", {'state': 'OR', 'zipcode': '12345-1234'})
 
