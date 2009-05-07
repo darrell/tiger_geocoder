@@ -1,0 +1,2 @@
+20	Kansas	KS	Kans.	Kan.
+41	Oregon	OR	Oreg.	Ore.
