@@ -82,3 +82,31 @@ of them are loaded by default if you run:
 
 psql -f create_geocode.sql YOURDB
 
+== Putting it all together ==
+
+I use the following script in testing:
+
+#!/bin/bash
+(
+  dropdb -U postgres tiger || exit 1
+  createdb -U postgres -O username -EUTF8 tiger || exit 1
+  psql tiger -q -f /usr/share/pgsql/contrib/fuzzystrmatch.sql || exit 1
+  
+  cp -f /dev/null log
+  
+  POSTGIS="/usr/share/pgsql/contrib/lwpostgis_upgrade-64.sql
+  /usr/share/pgsql/contrib/postgis_comments.sql
+  /usr/share/pgsql/contrib/spatial_ref_sys.sql"
+  
+  for i in ${POSTGIS}; do
+    psql tiger -q -f $i 
+  done
+  
+  ./import/import_tiger_shps.sh -X -n '*state*'
+  ./import/import_tiger_shps.sh -M
+  ./import/import_tiger_shps.sh -I
+
+   psql -q -f create_geocode.sql tiger
+
+) | tee log 2>&1
+
