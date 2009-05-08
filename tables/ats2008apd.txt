@@ -1,0 +1,24 @@
+2008 TIGER/Line Shapefiles Technical Documentation
+
+Appendix D  Feature Name Qualifiers
+
+Qualifier Code	Expanded Full Text	Display Name Abbreviation	Prefix Qualifier
+	Suffix Qualifier
+11	Access	Acc	N	Y
+12	Alternate	Alt	Y	Y
+13	Business	Bus	Y	Y
+14	Bypass	Byp	Y	Y
+15	Connector	Con	N	Y
+16	Extended	Exd	Y	Y
+17	Extension	Exn	N	Y
+18	Historic	Hst	Y	N
+19	Loop	Lp	Y	Y
+20	Old	Old	Y	N
+21	Private	Pvt	Y	Y
+22	Public	Pub	Y	Y
+23	Scenic	Scn	N	Y
+24	Spur	Spr	Y	Y
+25	Ramp	Rmp	N	Y
+26	Underpass	Unp	N	Y
+27	Overpass	Ovp	N	Y
+

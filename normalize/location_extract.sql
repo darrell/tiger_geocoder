@@ -11,75 +11,57 @@
 -- returned, rather than the string found from the tables.  All the searching
 -- is done largely to determine the length (words) of the location, to allow
 -- the intended street name to be correctly identified.
-CREATE OR REPLACE FUNCTION location_extract(fullStreet VARCHAR, stateAbbrev VARCHAR) RETURNS VARCHAR
+CREATE OR REPLACE FUNCTION location_extract(street_array TEXT[], stateAbbrev TEXT, exact BOOLEAN) RETURNS TEXT
 AS $_$
 DECLARE
-  ws VARCHAR;
-  location VARCHAR;
-  lstate VARCHAR;
+  statefp VARCHAR;
   stmt VARCHAR;
-  street_array text[];
-  word_count INTEGER;
   rec RECORD;
-  best INTEGER := 0;
   tempString VARCHAR;
 BEGIN
-  IF fullStreet IS NULL THEN
+  raise DEBUG 'entering location_extract, street_array: %, stateAbbrev: %', street_array, stateAbbrev;
+
+  IF array_upper(street_array,1) IS NULL THEN
     RETURN NULL;
   END IF;
 
-  ws := E'[ ,.\n\f\t]';
-
   IF stateAbbrev IS NOT NULL THEN
-    lstate := statefp FROM state WHERE state.stusps = stateAbbrev;
+    SELECT quote_literal(state.statefp) INTO statefp FROM state WHERE state.stusps = stateAbbrev;
   END IF;
 
-  street_array := regexp_split_to_array(fullStreet,ws);
-  word_count := array_upper(street_array,1);
+  tempString := quote_literal(lower(array_to_string(street_array,' ')));
 
-  tempString := '';
-  --FOR i IN 1..word_count LOOP
---    CONTINUE WHEN street_array[word_count-i+1] IS NULL OR street_array[word_count-i+1] = '';
+  stmt := ' SELECT'
+       || '   1,'
+       || '   name,'
+       || '   levenshtein_ignore_case(' || tempString || ',name) as rating,'
+       || '   length(name) as len'
+       || ' FROM place'
+       || ' WHERE ' || coalesce('statefp = ' || statefp || ' AND ','')
+       || CASE WHEN NOT exact THEN
+          '   metaphone(' || tempString || ', 6) = metaphone(name,6)'
+       || '   AND levenshtein_ignore_case(' || tempString || ',name) <= 2 '
+          ELSE tempString || ' = lower(name)' END
+       || ' UNION ALL SELECT'
+       || '   2,'
+       || '   name,'
+       || '   levenshtein_ignore_case(' || tempString || ',name) as rating,'
+       || '   length(name) as len'
+       || ' FROM cousub'
+       || ' WHERE ' || coalesce('statefp = ' || statefp || ' AND ','')
+       || CASE WHEN NOT exact THEN
+          '   metaphone(' || tempString || ',6) = metaphone(name,6)'
+       || '   AND levenshtein_ignore_case(' || tempString || ',name) <= 2 '
+          ELSE tempString || ' = lower(name)' END
+       || ' ORDER BY '
+       || '   3 ASC, 1 ASC, 4 DESC'
+       || ' LIMIT 1;'
+       ;
 
---    tempString := street_array[word_count-i+1] || tempString;
-  tempString := fullStreet;
+  EXECUTE stmt INTO rec;
 
-    stmt := ' SELECT'
-         || '   1,'
-         || '   name,'
-         || '   levenshtein_ignore_case(' || quote_literal(tempString) || ',name) as rating,'
-         || '   length(name) as len'
-         || ' FROM place'
-         || ' WHERE ' || CASE WHEN stateAbbrev IS NOT NULL THEN 'statefp = ' || quote_literal(lstate) || ' AND ' ELSE '' END
-         || '   metaphone(' || quote_literal(tempString) || ', 6) = metaphone(name,6)'
-         || '   AND levenshtein_ignore_case(' || quote_literal(tempString) || ',name) <= 2 '
-         || ' UNION ALL SELECT'
-         || '   2,'
-         || '   name,'
-         || '   levenshtein_ignore_case(' || quote_literal(tempString) || ',name) as rating,'
-         || '   length(name) as len'
-         || ' FROM cousub'
-         || ' WHERE ' || CASE WHEN stateAbbrev IS NOT NULL THEN 'statefp = ' || quote_literal(lstate) || ' AND ' ELSE '' END
-         || '   metaphone(' || quote_literal(tempString) || ',6) = metaphone(name,6)'
-         || '   AND levenshtein_ignore_case(' || quote_literal(tempString) || ',name) <= 2 '
-         || ' ORDER BY '
-         || '   3 ASC, 1 ASC, 4 DESC'
-         || ' LIMIT 1;'
-         ;
+  raise DEBUG 'location_extract: result: %', rec;
 
-    EXECUTE stmt INTO rec;
-    --raise DEBUG 'location_extract: stmt: %', stmt;
-    IF rec.rating >= best THEN
-      location := tempString;
-      best := rec.rating;
-    END IF;
-
-  --  tempString := ' ' || tempString;
-  --END LOOP;
-
-  location := replace(location,' ',ws || '+');
-  location := substring(fullStreet,'(?i)' || location || '$');
-
-  RETURN location;
+  RETURN rec.name;
 END;
 $_$ LANGUAGE plpgsql STABLE STRICT;

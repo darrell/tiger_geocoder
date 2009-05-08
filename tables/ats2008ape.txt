@@ -1,0 +1,510 @@
+2008 TIGER/Line Shapefiles Technical Documenation
+
+Appendix E  Feature Name Types
+
+Type Code	Expanded Full Text	Display Name Abbreviation	Spanish
+	Translation	Prefix Type	Suffix Type
+103	Academy	Acdmy	-	-	Y	Y
+104	Acueducto	Acueducto	Y	Aqueduct	Y	N
+105	Aeropuerto	Aero	Y	Airport	Y	N
+106	Air Force Base	AFB	-	-	N	Y
+107	Airfield	Airfield	-	-	N	Y
+108	Airpark	Airpark	-	-	N	Y
+109	Airport	Arprt	-	-	N	Y
+110	Airstrip	Airstrip	-	-	N	Y
+112	Alley	Aly	-	-	N	Y
+115	Apartment Building	Apt Bldg	-	-	N	Y
+116	Apartment Complex	Apt Complex	-	-	N	Y
+117	Apartments	Apts	-	-	N	Y
+118	Aqueduct	Aqueduct	-	-	N	Y
+119	Arcade	Arc	-	-	Y	Y
+121	Arroyo	Arroyo	Y	Stream	Y	N
+122	Assisted Living Center	Asstd Liv Ctr	-	-	N	Y
+694	Assisted Living Facility	Asstd Liv Fac	-	-	N	Y
+123	Autopista	Autopista	Y	Expressway/ Freeway	Y	N
+124	Avenida	Ave	Y	Avenue	Y	N
+125	Avenue	Ave	-	-	Y	Y
+126	Bahia	Bahía	Y	Bay	Y	N
+127	Bank	Bk	-	-	Y	Y
+704	Base	Base	-	-	N	Y
+128	Basin	Basin	-	-	N	Y
+129	Bay	Bay	-	-	Y	Y
+130	Bayou	Byu	-	-	Y	Y
+131	Beach	Bch	-	-	N	Y
+132	Bed and Breakfast	B and B	-	-	N	Y
+136	Beltway	Beltway	-	-	N	Y
+137	Bend	Bnd	-	-	N	Y
+138	Bluff	Blf	-	-	N	Y
+139	Boarding House	Brdng Hse	-	-	N	Y
+140	Bog	Bog	-	-	N	Y
+141	Bosque	Bosque	Y	Forest	Y	N
+142	Boulevard	Blvd	-	-	Y	Y
+143	Boundary	Boundary	-	-	N	Y
+146	Branch	Br	-	-	Y	Y
+147	Bridge	Brg	-	-	N	Y
+148	Brook	Brk	-	-	N	Y
+149	Building	Bldg	-	-	Y	Y
+150	Bulevar	Bulevar	Y	Boulevard	Y	N
+151	Bureau of Indian Affairs Highway	BIA Hwy	-	-	Y	N
+152	Bureau of Indian Affairs Road	BIA Rd	-	-	Y	N
+153	Bureau of Indian Affairs Route	BIA Rte	-	-	Y	N
+154	Bureau of Land Management Road	BLM Rd	-	-	Y	N
+696	Bypass	Byp	-	-	Y	Y
+156	Calle	Cll	Y	Street	Y	N
+157	Calleja	Calleja	Y	Narrow Street	Y	N
+158	Callejón	Callejón	Y	Alley	Y	N
+159	Caminito	Cmt	Y	Little Road	Y	N
+160	Camino	Cam	Y	Road/Way	Y	N
+161	Camp	Cp	-	-	Y	Y
+163	Campground	Cmpgrnd	-	-	N	Y
+164	Campus	Cmps	-	-	N	Y
+165	Canal	Cnl	-	-	Y	Y
+172	Cano	Caño	Y	Drain/Sewer	Y	N
+166	Cantera	Cantera	Y	Quarry/ Gravel Pit	Y	N
+167	Canyon	Cyn	-	-	Y	Y
+168	Capilla	Capilla	Y	Chapel	Y	N
+169	Carretera	Carr	Y	Road	Y	N
+170	Causeway	Cswy	-	-	N	Y
+171	Cayo	Cayo	Y	Key	Y	N
+173	Cementerio	Cem	Y	Cemetery	Y	N
+174	Cemetery	Cmtry	-	-	N	Y
+175	Center	Ctr	-	-	Y	Y
+176	Centro	Centro	Y	Center	Y	N
+177	Cerrada	Cer	Y	Closed	Y	N
+178	Chamber of Commerce	Cham of Com	-	-	N	Y
+179	Channel	Chnnl	-	-	N	Y
+180	Chapel	Cpl	-	-	Y	Y
+181	Childrens Home	Childrens Home	-	-	N	Y
+182	Church	Church	-	-	Y	Y
+183	Circle	Cir	-	-	N	Y
+234	Círculo	Cír	Y	Circle	Y	N
+184	City Hall	City Hall	-	-	N	Y
+185	City Park	City Park	-	-	N	Y
+186	Cliff	Clf	-	-	N	Y
+187	Club	Clb	-	-	Y	Y
+188	Colegio	Colegio	Y	School	Y	N
+189	College	Colg	-	-	Y	Y
+190	Common	Cmn	-	-	N	Y
+191	Commons	Cmns	-	-	Y	Y
+192	Community Center	Community Ctr	-	-	N	Y
+193	Community College	Community Colg	-	-	Y	Y
+194	Community Park	Community Park	-	-	Y	Y
+195	Complex	Complx	-	-	N	Y
+197	Condominios	Condios	Y	Condominiums	Y	N
+198	Condominium	Condo	-	-	Y	Y
+199	Condominiums	Condos	-	-	N	Y
+201	Convent	Cnvnt	-	-	Y	Y
+202	Convention Center	Convention Ctr	-	-	Y	Y
+203	Corners	Cors	-	-	N	Y
+204	Correctional Facility	Corr Faclty	-	-	N	Y
+205	Correctional Institute	Corr Inst	-	-	N	Y
+207	Corte	Corte	Y	Court	Y	N
+679	Cottage	Cottage	-	-	N	Y
+208	Coulee	Coulee	-	-	N	Y
+209	Country Club	Country Club	-	-	Y	Y
+210	County Highway	Co Hwy	-	-	Y	N
+211	County Home	Co Home	-	-	Y	Y
+212	County Lane	Co Ln	-	-	Y	N
+213	County Park	Co Park	-	-	N	Y
+214	County Road	Co Rd	-	-	Y	N
+215	County Route	Co Rte	-	-	Y	N
+216	County State Aid Highway	Co St Aid Hwy	-	-	Y	N
+217	County Trunk Highway	Co Trunk Hwy	-	-	Y	N
+218	County Trunk Road	Co Trunk Rd	-	-	Y	N
+219	Course	Crs	-	-	N	Y
+220	Court	Ct	-	-	Y	Y
+221	Courthouse	Courthouse	-	-	N	Y
+222	Courts	Cts	-	-	N	Y
+223	Cove	Cv	-	-	N	Y
+225	Creek	Crk	-	-	N	Y
+226	Crescent	Cres	-	-	N	Y
+227	Crest	Crst	-	-	N	Y
+228	Crossing	Xing	-	-	N	Y
+229	Crossroads	Xroad	-	-	Y	Y
+233	Cutoff	Cutoff	-	-	N	Y
+235	Dam	Dm	-	-	N	Y
+236	Delta Road	Delta Rd	-	-	Y	N
+237	Department	Dept	-	-	Y	Y
+238	Depot	Dep	-	-	N	Y
+239	Detention Center	Detention Ctr	-	-	N	Y
+240	District of Columbia Highway	DC Hwy	-	-	Y	N
+241	Ditch	Ditch	-	-	Y	Y
+242	Divide	Dv	-	-	N	Y
+243	Dock	Dock	-	-	N	Y
+244	Dormitory	Dormitory	-	-	N	Y
+245	Drain	Drn	-	-	N	Y
+246	Draw	Draw	-	-	N	Y
+247	Drive	Dr	-	-	N	Y
+248	Driveway	Driveway	-	-	Y	Y
+249	Dump	Dump	-	-	N	Y
+251	Edificio	Edif	Y	Building	Y	N
+252	Elementary School	Elem School	-	-	N	Y
+253	Ensenada	Ensenada	Y	Cove	Y	N
+254	Entrada	Ent	Y	Entrance	Y	N
+256	Escuela	Escuela	Y	School	Y	N
+680	Esplanade	Esplanade	Y	Esplanade	Y	Y
+257	Estates	Ests	-	-	N	Y
+260	Estuary	Estuary	-	-	N	Y
+261	Expreso	Expreso	Y	Expressway	Y	N
+262	Expressway	Expy	-	-	Y	Y
+263	Extension	Ext	-	-	Y	Y
+264	Facility	Faclty	-	-	N	Y
+265	Fairgrounds	Fairgrounds	-	-	N	Y
+266	Falls	Fls	-	-	Y	Y
+267	Farm	Frm	-	-	N	Y
+268	Farm Road	Farm Rd	-	-	Y	N
+269	Farm-to-Market Road	FM	-	-	Y	N
+275	Fence Line	Fence Line	-	-	N	Y
+276	Ferry Crossing	Ferry Crossing	-	-	Y	Y
+277	Field	Fld	-	-	N	Y
+278	Fire Control Road	Fire Cntrl Rd	-	-	Y	N
+279	Fire Department	Fire Dept	-	-	N	Y
+280	Fire District Road	Fire Dist Rd	-	-	Y	N
+281	Fire Lane	Fire Ln	-	-	Y	N
+282	Fire Road	Fire Rd	-	-	Y	N
+283	Fire Route	Fire Rte	-	-	Y	N
+284	Fire Station	Fire Sta	-	-	Y	Y
+285	Fire Trail	Fire Trl	-	-	Y	N
+286	Flowage	Flowage	-	-	N	Y
+287	Flume	Flume	-	-	N	Y
+288	Forest	Frst	-	-	N	Y
+289	Forest Highway	Forest Hwy	-	-	Y	Y
+290	Forest Road	Forest Rd	-	-	Y	N
+291	Forest Route	Forest Rte	-	-	Y	N
+292	Forest Service Road	FS Rd	-	-	Y	N
+293	Fork	Frk	-	-	N	Y
+294	Fort	Ft	-	-	Y	N
+295	Four-Wheel Drive Trail	4WD Trl	-	-	Y	Y
+296	Fraternity	Frtrnty	-	-	N	Y
+297	Freeway	Fwy	-	-	N	Y
+298	Garage	Grge	-	-	N	Y
+299	Gardens	Gdns	-	-	N	Y
+303	Glacier	Glacier	-	-	N	Y
+304	Glen	Gln	-	-	N	Y
+305	Golf Club	Golf Club	-	-	Y	Y
+306	Golf Course	Golf Course	-	-	Y	Y
+307	Grade	Grade	-	-	N	Y
+309	Green	Grn	-	-	N	Y
+310	Group Home	Group Home	-	-	N	Y
+311	Gulch	Gulch	-	-	N	Y
+312	Gulf	Gulf	-	-	Y	Y
+313	Gully	Gully	-	-	N	Y
+314	Halfway House	Halfway House	-	-	N	Y
+315	Hall	Hall	-	-	N	Y
+316	Harbor	Hbr	-	-	N	Y
+317	Heights	Hts	-	-	N	Y
+321	High School	High School	-	-	N	Y
+322	Highway	Hwy	-	-	Y	Y
+323	Hill	Hl	-	-	N	Y
+324	Hollow	Holw	-	-	N	Y
+325	Home	Home	-	-	Y	Y
+326	Hospital	Hosp	-	-	Y	Y
+327	Hostel	Hostel	-	-	N	Y
+328	Hotel	Hotel	-	-	Y	Y
+329	House	Hse	-	-	Y	Y
+330	Housing	Hsng	-	-	Y	Y
+332	Iglesia	Iglesia	Y	Church	Y	N
+333	Indian Route	Indian Rte	-	-	Y	N
+334	Indian Service Route	Indian Svc Rte	-	-	Y	N
+336	Industrial Park	Indl Park	-	-	N	Y
+337	Inlet	Inlt	-	-	N	Y
+338	Inn	Inn	-	-	Y	Y
+339	Institute	Inst	-	-	Y	Y
+340	Institution	Instn	-	-	N	Y
+341	Instituto	Instituto	Y	Institute	Y	N
+342	Intermediate School	Inter School	-	-	N	Y
+344	Interstate Highway	I-	-	-	Y	N
+345	Isla	Isla	Y	Island	Y	N
+346	Island	Is	-	-	N	Y
+347	Islands	Iss	-	-	Y	Y
+348	Isle	Isle	-	-	Y	Y
+349	Jail	Jail	-	-	N	Y
+351	Jeep Trail	Jeep Trl	-	-	Y	Y
+352	Junction	Junction	-	-	N	Y
+353	Junior High School	Jr HS	-	-	N	Y
+356	Kill	Kill	-	-	Y	Y
+357	Lago	Lago	Y	Lake	Y	N
+358	Lagoon	Lagoon	-	-	N	Y
+360	Laguna	Laguna	Y	Lagoon	Y	N
+361	Lake	Lk	-	-	Y	Y
+362	Lakes	Lks	-	-	N	Y
+363	Landfill	Lndfll	-	-	N	Y
+364	Landing	Lndg	-	-	N	Y
+365	Landing Area	Landing Area	-	-	Y	Y
+366	Landing Field	Landing Fld	-	-	Y	Y
+367	Landing Strip	Landing Strp	-	-	Y	Y
+368	Lane	Ln	-	-	Y	Y
+369	Lateral	Lateral	-	-	Y	Y
+370	Levee	Levee	-	-	Y	Y
+371	Library	Lbry	-	-	Y	Y
+372	Lift	Lift	-	-	Y	Y
+373	Lighthouse	Lighthouse	-	-	N	Y
+374	Line	Line	-	-	Y	Y
+376	Lodge	Ldg	-	-	N	Y
+377	Logging Road	Logging Rd	-	-	Y	Y
+378	Loop	Loop	-	-	Y	Y
+379	Mall	Mall	-	-	Y	Y
+380	Manor	Mnr	-	-	N	Y
+381	Mar	Mar	Y	Sea	Y	N
+382	Marginal	Marginal	Y	Service Road	Y	N
+383	Marina	Mrna	-	-	N	Y
+384	Marsh	Marsh	-	-	N	Y
+385	Meadows	Mdws	-	-	N	Y
+386	Medical Building	Medical Bldg	-	-	N	Y
+387	Medical Center	Medical Ctr	-	-	Y	Y
+388	Memorial	Meml	-	-	N	Y
+389	Memorial Gardens	Memorial Gnds	-	-	N	Y
+390	Memorial Park	Memorial Pk	-	-	N	Y
+391	Mesa	Mesa	-	-	Y	Y
+392	Middle School	Mid Schl	-	-	N	Y
+393	Military Reservation	Mil Res	-	-	N	Y
+394	Millpond	Millpond	-	-	N	Y
+395	Mine	Mine	-	-	N	Y
+396	Mission	Mssn	-	-	Y	Y
+397	Mobile Home Community	Mobile Hm Cmty	-	-	Y	Y
+398	Mobile Home Estates	Mobile Hm Est	-	-	Y	Y
+399	Mobile Home Park	Mobile Hm Pk	-	-	Y	Y
+400	Monastery	Monstry	-	-	Y	Y
+401	Monument	Mnmt	-	-	N	Y
+403	Mosque	Mosque	-	-	Y	Y
+404	Motel	Mtl	-	-	Y	Y
+405	Motor Lodge	Motor Lodge	-	-	N	Y
+406	Motorway	Mtwy	-	-	N	Y
+407	Mount	Mt	-	-	Y	Y
+408	Mountain	Mtn	-	-	N	Y
+411	Museum	Mus	-	-	Y	Y
+412	National Battlefield	Natl Bfld	-	-	N	Y
+413	National Battlefield Park	Natl Bfld Pk	-	-	N	Y
+414	National Battlefield Site	Natl Bfld Site	-	-	N	Y
+415	National Conservation Area	Natl Cnsv Area	-	-	N	Y
+416	National Forest	Natl Forest	-	-	N	Y
+417	National Forest Development Road	Nat For Dev Rd	-	-	Y
+	N
+419	National Grasslands	Natl Grsslnds	-	-	N	Y
+420	National Historic Site	Natl Hist Site	-	-	N	Y
+421	National Historical Park	Natl Hist Pk	-	-	N	Y
+422	National Lakeshore	Natl Lkshr	-	-	N	Y
+423	National Memorial	Natl Meml	-	-	N	Y
+424	National Military Park	Natl Mil Pk	-	-	N	Y
+425	National Monument	Natl Mnmt	-	-	N	Y
+426	National Park	Natl Pk	-	-	N	Y
+427	National Preserve	Natl Prsv	-	-	N	Y
+428	National Recreation Area	Natl Rec Area	-	-	N	Y
+429	National Recreational River	Natl Rec Riv	-	-	N	Y
+430	National Reserve	Natl Resv	-	-	N	Y
+431	National River	Natl Riv	-	-	N	Y
+432	National Scenic Area	Natl Sc Area	-	-	N	Y
+433	National Scenic River	Natl Sc Riv	-	-	N	Y
+435	National Scenic Riverways	Natl Sc Rvrwys	-	-	N	Y
+436	National Scenic Trail	Natl Sc Trl	-	-	N	Y
+437	National Seashore	Natl Shr	-	-	N	Y
+438	National Wildlife Refuge	Natl Wld Rfg	-	-	N	Y
+439	Navajo Service Route	Navajo Svc Rte	-	-	Y	N
+440	Naval Air Station	Naval Air Sta	-	-	N	Y
+442	Nursing Home	Nurse Home	-	-	N	Y
+444	Ocean	Ocean	-	-	N	Y
+445	Oceano	Océano	Y	Ocean	Y	N
+446	Office	Ofc	-	-	Y	Y
+447	Office Building	Office Bldg	-	-	N	Y
+449	Office Park	Office Park	-	-	N	Y
+698	Orchard	Orchard	-	-	N	Y
+451	Orchards	Orchrds	-	-	N	Y
+452	Orphanage	Orphanage	-	-	N	Y
+453	Outlet	Outlet	-	-	N	Y
+454	Oval	Oval	-	-	N	Y
+455	Overpass	Opas	-	-	N	Y
+456	Parish Road	Parish Rd	-	-	Y	N
+457	Park	Park	-	-	N	Y
+458	Park and Ride	Park and Ride	-	-	N	Y
+460	Parkway	Pkwy	-	-	N	Y
+461	Parque	Parque	Y	Park	Y	N
+462	Pasaje	Pasaje	Y	Passage	Y	N
+463	Paseo	Pso	Y	Path	Y	N
+464	Pass	Pass	-	-	Y	Y
+465	Passage	Psge	-	-	Y	Y
+466	Path	Path	-	-	N	Y
+682	Pavilion	Pavilion	-	-	N	Y
+467	Peak	Peak	-	-	N	Y
+705	Penitentiary	Penitentiary	-	-	N	Y
+468	Pier	Pier	-	-	Y	Y
+469	Pike	Pike	-	-	N	Y
+470	Pipeline	Pipeline	-	-	N	Y
+472	Place	Pl	-	-	N	Y
+473	Placita	Pla	Y	Little Plaza	Y	N
+474	Plant	Plnt	-	-	N	Y
+683	Plantation	Plantation	-	-	N	Y
+475	Playa	Playa	Y	Beach	Y	N
+476	Playground	Playground	-	-	N	Y
+477	Plaza	Plz	-	-	Y	Y
+478	Point	Pt	-	-	Y	Y
+479	Pointe	Pointe	-	-	N	Y
+480	Police Department	Police Dept	-	-	Y	Y
+481	Police Station	Police Station	-	-	Y	Y
+482	Pond	Pond	-	-	Y	Y
+483	Ponds	Ponds	-	-	N	Y
+485	Port	Prt	-	-	Y	Y
+486	Post Office	Post Office	-	-	N	Y
+487	Power Line	Power Line	-	-	N	Y
+691	Power Plant	Power Plant	-	-	N	Y
+488	Prairie	Pr	-	-	N	Y
+489	Preserve	Preserve	-	-	N	Y
+491	Prison	Prison	-	-	N	Y
+690	Prison Farm	Prison Farm	-	-	N	Y
+685	Promenade	Promenade	-	-	N	Y
+492	Prong	Prong	-	-	N	Y
+494	Puente	Puente	Y	Bridge	Y	N
+495	Quadrangle	Quadrangle	-	-	N	Y
+496	Quarry	Quar	-	-	N	Y
+686	Quarters	Quarters	-	-	N	Y
+497	Quebrada	Qbda	Y	Creek	Y	N
+499	Race	Race	-	-	N	Y
+501	Rail	Rail	-	-	N	Y
+502	Rail Link	Rail Link	-	-	Y	Y
+504	Railnet	Railnet	-	-	N	Y
+505	Railroad	RR	-	-	N	Y
+506	Railway	Rlwy	-	-	N	Y
+507	Ramal	Ramal	Y	Short Street	Y	N
+508	Ramp	Ramp	-	-	N	Y
+510	Ranch Road	Ranch Rd	-	-	Y	N
+511	Ranch to Market Road	RM	-	-	Y	N
+512	Rancho	Rch	Y	Ranch/Farm	Y	N
+513	Ravine	Ravine	-	-	N	Y
+514	Recreation Area	Rec Area	-	-	N	Y
+515	Reformatory	Reformatory	-	-	N	Y
+516	Refuge	Refuge	-	-	N	Y
+518	Regional Park	Regional Pk	-	-	N	Y
+519	Reservation	Reservation	-	-	N	Y
+520	Reservation Highway	Resvn Hwy	-	-	Y	N
+521	Reserve	Resv	-	-	N	Y
+522	Reservoir	Reservoir	-	-	Y	Y
+524	Residence Hall	Res Hall	-	-	N	Y
+525	Residencial	Residencial	Y	Public Housing Project	Y	N
+526	Resort	Resrt	-	-	N	Y
+688	Rest Home	Rest Home	-	-	N	Y
+527	Retirement Home	Retirement Hme	-	-	N	Y
+528	Retirement Village	Retirement Vlg	-	-	N	Y
+529	Ridge	Rdg	-	-	N	Y
+543	Rio	Río	Y	River	Y	N
+530	River	Riv	-	-	N	Y
+531	Road	Rd	-	-	Y	Y
+533	Roadway	Roadway	-	-	N	Y
+535	Rock	Rock	-	-	Y	Y
+536	Rooming House	Rooming Hse	-	-	N	Y
+537	Route	Rte	-	-	Y	Y
+538	Row	Row	-	-	Y	Y
+539	Rue	Rue	-	-	Y	Y
+540	Run	Run	-	-	N	Y
+541	Runway	Runway	-	-	Y	Y
+542	Ruta	Ruta	Y	Route	Y	N
+498	RV Park	RV Park	-	-	N	Y
+545	Sanitarium	Sanitarium	-	-	N	Y
+546	School	Schl	-	-	Y	Y
+549	Sea	Sea	-	-	Y	Y
+550	Seashore	Seashore	-	-	N	Y
+552	Sector	Sec	Y	Sector	Y	N
+553	Seminary	Smry	-	-	Y	Y
+554	Sendero	Sendero	Y	Foot Path	Y	N
+555	Service Road	Svc Rd	-	-	Y	Y
+556	Shelter	Shelter	-	-	N	Y
+558	Shop	Shop	-	-	N	Y
+699	Shopping Center	Shopping Ctr	-	-	N	Y
+560	Shopping Mall	Shopping Mall	-	-	N	Y
+700	Shopping Plaza	Shopping Plz	-	-	N	Y
+703	Site	Site	-	-	N	Y
+564	Skyway	Skwy	-	-	Y	Y
+565	Slough	Slough	-	-	N	Y
+566	Sonda	Sonda	Y	Sound	Y	N
+567	Sorority	Sorority	-	-	Y	Y
+568	Sound	Snd	-	-	Y	N
+569	Spa	Spa	-	-	Y	Y
+570	Speedway	Speedway	-	-	Y	Y
+571	Spring	Spg	-	-	N	Y
+572	Spur	Spur	-	-	Y	Y
+573	Square	Sq	-	-	Y	Y
+575	State Beach	State Beach	-	-	N	Y
+577	State Forest	State Forest	-	-	N	Y
+578	State Forest Service Road	St FS Rd	-	-	Y	N
+579	State Highway	State Hwy	-	-	Y	N
+580	State Hospital	State Hospital	-	-	Y	Y
+581	State Loop	State Loop	-	-	Y	N
+582	State Park	State Park	-	-	N	Y
+584	State Prison	State Prison	-	-	N	Y
+585	State Road	State Rd	-	-	Y	N
+586	State Route	State Rte	-	-	Y	N
+588	State Spur	State Spur	-	-	Y	N
+589	State Trunk Highway	St Trunk Hwy	-	-	Y	N
+591	Station	Sta	-	-	N	Y
+592	Strait	Strait	-	-	Y	Y
+593	Stravenue	Stra	-	-	N	Y
+594	Stream	Strm	-	-	N	Y
+595	Street	St	-	-	N	Y
+596	Strip	Strip	-	-	Y	Y
+599	Swamp	Swamp	-	-	N	Y
+600	Synagogue	Synagogue	-	-	Y	Y
+601	Tank	Tank	-	-	N	Y
+603	Temple	Tmpl	-	-	Y	Y
+604	Terminal	Trmnl	-	-	N	Y
+605	Terrace	Ter	-	-	Y	Y
+687	Thoroughfare	Thoroughfare	-	-	N	Y
+607	Toll Booth	Toll Booth	-	-	Y	Y
+701	Toll Road	Toll Rd	-	-	N	Y
+610	Tollway	Tollway	-	-	N	Y
+611	Tower	Twr	-	-	Y	Y
+612	Town Center	Town Ctr	-	-	Y	Y
+613	Town Hall	Town Hall	-	-	N	Y
+614	Town Highway	Town Hwy	-	-	Y	N
+615	Town Road	Town Rd	-	-	Y	N
+616	Towne Center	Towne Ctr	-	-	Y	Y
+617	Township Highway	Twp Hwy	-	-	Y	N
+618	Township Road	Twp Rd	-	-	Y	N
+619	Trace	Trce	-	-	N	Y
+620	Track	Trak	-	-	Y	Y
+621	Trafficway	Trfy	-	-	N	Y
+622	Trail	Trl	-	-	Y	Y
+623	Trailer Court	Trailer Ct	-	-	N	Y
+624	Trailer Park	Trailer Pk	-	-	N	Y
+628	Transmission Line	Trans Ln	-	-	N	Y
+702	Treatment Plant	Trmt Plant	-	-	Y	Y
+630	Tribal Road	Tribal Rd	-	-	Y	N
+632	Trolley	Trolley	-	-	Y	Y
+633	Truck Trail	Truck Trl	-	-	Y	Y
+636	Túnel	Túnel	Y	Tunnel	Y	N
+634	Tunnel	Tunl	-	-	Y	Y
+635	Turnpike	Tpke	-	-	N	Y
+637	Underpass	Upas	-	-	Y	Y
+642	Universidad	Universidad	Y	University/ College	Y	N
+643	University	Univ	-	-	Y	Y
+638	US Forest Service Highway	USFS Hwy	-	-	Y	N
+639	US Forest Service Road	USFS Rd	-	-	Y	N
+640	US Highway	US Hwy	-	-	Y	N
+641	US Route	US Rte	-	-	Y	N
+644	Valley	Vly	-	-	N	Y
+645	Vereda	Ver	Y	Path	Y	N
+655	Via	Via	Y	Way	Y	N
+646	Viaduct	Viaduct	-	-	N	Y
+647	View	Vw	-	-	N	Y
+648	Villa	Villa	-	-	Y	Y
+649	Village	Vlg	-	-	Y	Y
+650	Village Center	Village Ctr	-	-	Y	Y
+697	Vineyard	Vineyard	-	-	N	Y
+652	Vineyards	Vineyards	-	-	N	Y
+654	Vista	Vis	-	-	Y	Y
+656	Walk	Walk	-	-	N	Y
+657	Walkway	Walkway	-	-	N	Y
+659	Wash	Wash	-	-	N	Y
+660	Waterway	Waterway	-	-	N	Y
+661	Way	Way	-	-	N	Y
+663	Wharf	Wharf	-	-	N	Y
+665	Wild and Scenic River	Wld n Snc Riv	-	-	N	Y
+664	Wild River	Wild River	-	-	N	Y
+666	Wilderness	Wilderness	-	-	N	Y
+667	Wilderness Park	Wilderenss Pk	-	-	N	Y
+668	Wildlife Management Area	Wldlf Mgt Area	-	-	N	Y
+669	Winery	Winery	-	-	Y	Y
+672	Yard	Yard	-	-	N	Y
+673	Yards	Yards	-	-	Y	Y
+670	YMCA	YMCA	-	-	Y	Y
+671	YWCA	YWCA	-	-	Y	Y
+675	Zanja	Zanja	Y	Ditch	Y	N
+676	Zoo	Zoo	-	-	Y	Y
+

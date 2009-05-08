@@ -1,0 +1,22 @@
+2008 TIGER/Line Shapefiles Technical Documentation
+
+Appendix C  Feature Name Directionals
+
+Direction Code	Expanded Full Text	Directional Abbreviation	Spanish	Translation
+11	North	N	-	-
+12	South	S	-	-
+13	East	E	-	-
+14	West	W	-	-
+15	Northeast	NE	-	-
+16	Northwest	NW	-	-
+17	Southeast	SE	-	-
+18	Southwest	SW	-	-
+19	Norte	N	Y	North
+20	Sur	S	Y	South
+21	Este	E	Y	East
+22	Oeste	O	Y	West
+23	Noreste	NE	Y	Northeast
+24	Noroeste	NO	Y	Northwest
+25	Sudeste	SE	Y	Southeast
+26	Sudoeste	SO	Y	Southwest
+
