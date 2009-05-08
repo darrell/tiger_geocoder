@@ -39,6 +39,7 @@ State:
 County:
   tl_2008_XXYYY_cousub.zip
   tl_2008_XXYYY_faces.zip
+  tl_2008_XXYYY_featnames.zip
   tl_2008_XXYYY_edges.zip
   tl_2008_XXYYY_addr.zip
   tl_2008_XXYYY_addrfn.zip
