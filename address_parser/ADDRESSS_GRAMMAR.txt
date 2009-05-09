@@ -11,34 +11,41 @@
 
 <address> ::== <house>? <whitespace> <street>;
 
-<street> ::== <predir>? <whitespace> <pretyp>? <whitespace> <prequal>? <whitespace> 
+<street> ::== <prefixes> <whitespace> 
              <streetname> <whitespace> 
-             <suftype>? <whitespace> <sufdir>? <whitespace>  <sufqual>?;
+             <suffixes>;
              
 # cope with michigan rural addresses?
 <house> :== (<housenumber>|<houserange>) <whitespace>+;
 <housenumber> :== 'G'*<digit>+;
 <houserange> ::== <housenumber>-<housenumber>;
 
-
+# street components
 <predir> ::== {List of predirs};
 <pretype> ::== {List of pretypes};
 <prequal> ::== {List of prequals};
-<streetname> ::== <word>+;
+<prefixes> ::== <predir>? <whitespace> <pretyp>? <whitespace> <prequal>?;
+
+<streetname> ::== <word>+ | <digit>+<numbersuffix>*;
+
 <suftype> ::== {List of suftypes};
 <sufdir> ::== {List of sufdirs};
 <sufqual> ::== {List of sufquals};
-
+<suffixes> ::== <suftype>? <whitespace> <sufdir>? <whitespace>  <sufqual>?;
+# city
 <place> ::== <addrsep> <placename>;
 <placename> ::== <word> <wordspace>*;
 
+# units
 <unit> ::== <unittype> <whitespace>+ <unitno>;
 <unittype> ::== {list of possible unit types};
 <unitno> ::== <alphanum>+| "#";
 
+# state
 <state> ::== <addrsep> <statename>;
-<state> ::== {List of state names};
+<statename> ::== {List of state names & abbrevs};
 
+#zip
 <zipcode> ::== <zip5><zipsuf>?;
 
 <zip5> ::== <digit><digit><digit><digit><digit>;
@@ -48,8 +55,10 @@
 
 <zipsep> ::== "+" | "-";
 
+# other bits
 <digit> ::== 1/2/3/4/5/6/7/8/9/0
 <wordspace> ::== <whitespace>+<word>
+<numbersuffix> ::== 'st'| 'th'| 'nd'
 
 <word> ::== [a-z.-]+;
 
