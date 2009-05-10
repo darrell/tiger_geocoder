@@ -107,7 +107,9 @@ zipcode = Combine(zip5.setResultsName('zip') +Optional(zip4.setResultsName('zip4
 state=getStates()
 # address component separator
 #addrSep=Optional(ZeroOrMore(White())+ZeroOrMore(Literal(','))+ZeroOrMore(White())).suppress()
-addrSep=(ZeroOrMore(White())+ZeroOrMore(Literal(','))+ZeroOrMore(White())).suppress()
+#addrSep=(ZeroOrMore(White())+ZeroOrMore(Literal(','))+ZeroOrMore(White())).suppress()
+comma=ZeroOrMore(White())+Literal(',')+ZeroOrMore(White())
+addrSep=Or([OneOrMore(White()),comma,LineEnd()])
 
 #Places
 try:
@@ -134,7 +136,7 @@ streetNumberSuffix = oneOf("st th nd", caseless=True).setResultsName("numbersuff
 # numberedStreet = ~streetNumberSuffix+
 numberedStreet = (OneOrMore(Word(nums))+Optional(streetNumberSuffix)).setParseAction(lambda toks: "".join(toks)).setResultsName("numberedstreet")
 
-directions=oneOf("N S E W NE SE NW SW", caseless=True)
+directions=oneOf("N S E W NE SE NW SW", caseless=True)+FollowedBy(Or([addrSep,WordEnd()]))
 # Street name prefixes
 predir = directions.setResultsName('predir')
 predir.setParseAction(lambda t:t[0].strip())
@@ -169,6 +171,7 @@ street=Optional(predir+FollowedBy(White()).suppress())\
 
 
 
+
 address = number.setResultsName("housenumber") + street
 address.setResultsName('address')
 
@@ -177,7 +180,7 @@ intersection = ( street.setResultsName("intersectionA").setParseAction(lambda to
                  street.setResultsName("intersectionB").setParseAction(lambda toks: " ".join(toks)) )
 
 # Whole Address
-location= Optional(address) + addrSep + Optional(place) + addrSep + Optional(state) + addrSep + Optional(zipcode)
+location= Optional(address + addrSep) + Optional(place + addrSep) + Optional(state + addrSep) + Optional(zipcode)
 
 
 test(zipsep, '+', '-')
@@ -223,4 +226,5 @@ test(location, "123 E Old Airport Rd SW 97212",{'predir': 'E','housenumber':'123
 test(location, "123 E Old Airport Rd SW, North Bend, 97212",{'predir': 'E','housenumber':'123','prequal': 'Old', 'streetname': 'Airport', 'suftype': 'Rd', 'sufdir': 'SW', 'place': 'North Bend','zipcode': '97212'})
 test(location, '18196 68th Ave Bend Oregon', {'housenumber': '18196','streetname': '68th','suftype':'Ave','place': 'Bend','state':'OR' })
 test(location, '18196 68th Ave North Bend Oregon', {'housenumber': '18196','streetname': '68th','suftype':'Ave','place': 'North Bend','state':'OR' })
+#test(SkipTo(state)+state, '18196 68th Ave North Bend Oregon', {'state':'OR' })
 exit(exit_val)
