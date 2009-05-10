@@ -1,0 +1,5 @@
+* add all pre/suf variations and mis-spellings
+  which will probably break some things...
+* convert to proper module
+* add proper unit tests, including negatives (i.e. should raise exception, etc...)
+
