@@ -97,6 +97,59 @@ zipcode = Combine(zip5.setResultsName('zip') +Optional(zip4.setResultsName('zip4
 
 # States
 state=getStates()
+# address component separator
+addrSep=ZeroOrMore(White())+ZeroOrMore(Literal(','))+ZeroOrMore(White()).suppress()
+
+#Places
+try:
+  place = getPlaces()
+except:
+  place= Combine(OneOrMore(Word(alphas+'.')+Optional(White()))).setResultsName('place')
+
+place=place.setResultsName('place')
+#print place
+#House Number & street
+# began with code cribbed from pyparsing example code at
+# http://pyparsing.wikispaces.com/file/view/streetAddressParser.py
+# number can be any of the forms 123, 21B, or 23 1/2
+number = ( Combine(Word(nums) + 
+                   Optional(oneOf(list(alphas))+FollowedBy(White()))) + \
+            Optional(Optional("-") + "1/2")
+         ).setParseAction(keepOriginalText, lambda t:t[0].strip())
+
+word = Word(alphas+'.'+'-')
+#words = Group(OneOrMore(~Literal("Ave")+Word(alphas)))+"Ave"
+streetNumberSuffix = oneOf("st th nd", caseless=True).setResultsName("numbersuffix")
+
+# numberedStreet = ~streetNumberSuffix+
+numberedStreet = (OneOrMore(Word(nums))+streetNumberSuffix).setParseAction(lambda toks: "".join(toks)).setResultsName("numberedstreet")
+
+# types of streets - extend as desired
+predir = oneOf("N S E W NE SE NW SW", caseless=True).setResultsName('predir')
+
+predir.setParseAction(lambda t:t[0].strip())
+suftype = Combine( oneOf("Street St Boulevard Blvd Lane Ln Road Rd Avenue Ave "
+                        "Circle Cir Cove Cv Drive Dr Parkway Pkwy Court Ct",
+                        caseless=True) + Optional(".").suppress()).setResultsName("suftype")
+
+# <streetname> ::== <word>+ | <digit>+<numbersuffix>*;
+streetname = (Group(OneOrMore(~suftype+Word(alphas))).setParseAction(lambda toks: " ".join(toks[0]))|numberedStreet)
+
+# <street> ::== <predir>? <whitespace> <pretyp>? <whitespace> <prequal>? <whitespace> 
+#               <streetname> <whitespace> 
+#               <suftype>? <whitespace> <sufdir>? <whitespace>  <sufqual>?;
+
+street=Optional(predir("predir"))+streetname("streetname")+ZeroOrMore(suftype)
+
+address = number.setResultsName("housenumber") + street
+address.setResultsName('address')
+
+intersection = ( street.setResultsName("intersectionA").setParseAction(lambda toks: " ".join(toks)) + 
+                 oneOf('and & at',caseless=True) +
+                 street.setResultsName("intersectionB").setParseAction(lambda toks: " ".join(toks)) )
+
+# Whole Address
+location= Optional(address)+Optional(addrSep)+Optional(place) + Optional(addrSep) + Optional(state) + Optional(addrSep).suppress() + Optional(zipcode)
 
 
 test(zipsep, '+', '-')
@@ -128,4 +181,4 @@ test(street, "SE 21St Ave.", {'predir': 'SE','suftype': 'Ave','streetname': '21s
 test(street, "SE 21St St.", {'predir': 'SE','suftype': 'St','streetname': '21st'})
 test(intersection, "NE Foo Rd and 21ST Ave", {'intersectionA': 'NE Foo Rd', 'intersectionB': '21st Ave'})
 test(address, "123 SE 21St St.", {'housenumber': '123', 'predir': 'SE','streetname': '21st', 'suftype': 'St'})
-test(location, "123 Main St, Portland, Oregon, 97212",{'place': 'Portland', 'state': 'OR', 'zipcode': '12345-1234'})
+test(location, "123 Main St, Portland, Oregon, 97212",{'place': 'Portland', 'state': 'OR', 'zipcode': '97212'})
