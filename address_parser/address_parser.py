@@ -2,8 +2,9 @@ import sys
 from pyparsing import *
 #import address_helpers
 
-complicated_string='XyZzY'
-original_state=''
+exit_val=0
+do_output_correct=False
+
 def flatten(l, ltypes=(list, tuple)):
     ltype = type(l)
     l = list(l)
@@ -51,7 +52,9 @@ def getPlaces():
 
 
 def test(p,s,expected):
+  global exit_val
   failed=False
+  exit_str=''
   try:
       result = p.parseString(s)
   except ParseException, pe:
@@ -61,29 +64,34 @@ def test(p,s,expected):
       print pe.msg
   else:
     if {}.__class__ == expected.__class__:
-      print "'%s' -> '%s'" % (s,expected)
+      exit_str=exit_str+ "'%s' -> '%s'\n" % (s,expected)
       for k, v in expected.iteritems():
         if result.get(k) == v:
-          print "   '%s' -> '%s' CORRECT" % (k,v)
+          exit_str = exit_str + "   '%s' -> '%s' CORRECT\n" % (k,v)
         else:
           failed=True
-          print "   '%s' -> '%s' ***WRONG***  expected '%s'" % (k,result.get(k),v)
+          exit_str=exit_str+ "   '%s' -> '%s' ***WRONG***  expected '%s'\n" % (k,result.get(k),v)
       if failed:
-        print "TOKENS are:" #"%s" % result.asDict()
-        print result.dump()
+        exit_str=exit_str+ "TOKENS are:\n" #"%s" % result.asDict()
+        exit_str=exit_str+ result.dump()
           
         #else:
           #print "***WRONG***, expected %s for %s" % (key,value)
     else:
       res = result[0]
-      print "'%s' -> %s" % (s, res),
+      exit_str=exit_str+"'%s' -> %s\n" % (s, res)
       if res == expected:
-        print "CORRECT"
+        exit_str=exit_str+"CORRECT\n"
       else:
-        print "***WRONG***, expected %s" % result.asList
+        exit_str=exit_str+ "***WRONG***, expected %s\n" % result.asList
     if expected=={}:
-      print result.dump()
-  print "-----------"
+      failed=True
+      exit_str=exit_str+result.dump()
+  if failed:
+    exit_val=1
+  if (failed or do_output_correct):
+    print exit_str
+    print "-----------"
 
   
 # Zipcodes
@@ -98,7 +106,8 @@ zipcode = Combine(zip5.setResultsName('zip') +Optional(zip4.setResultsName('zip4
 # States
 state=getStates()
 # address component separator
-addrSep=ZeroOrMore(White())+ZeroOrMore(Literal(','))+ZeroOrMore(White()).suppress()
+#addrSep=Optional(ZeroOrMore(White())+ZeroOrMore(Literal(','))+ZeroOrMore(White())).suppress()
+addrSep=(ZeroOrMore(White())+ZeroOrMore(Literal(','))+ZeroOrMore(White())).suppress()
 
 #Places
 try:
@@ -106,13 +115,14 @@ try:
 except:
   place= Combine(OneOrMore(Word(alphas+'.')+Optional(White()))).setResultsName('place')
 
+#place= Combine(OneOrMore(Word(alphas+'.')+Optional(White()))).setResultsName('place')
 place=place.setResultsName('place')
 #print place
 #House Number & street
 # began with code cribbed from pyparsing example code at
 # http://pyparsing.wikispaces.com/file/view/streetAddressParser.py
 # number can be any of the forms 123, 21B, or 23 1/2
-number = ( Combine(Word(nums) + 
+number = ( Combine(Word('G'+nums,nums) + 
                    Optional(oneOf(list(alphas))+FollowedBy(White()))) + \
             Optional(Optional("-") + "1/2")
          ).setParseAction(keepOriginalText, lambda t:t[0].strip())
@@ -122,24 +132,42 @@ word = Word(alphas+'.'+'-')
 streetNumberSuffix = oneOf("st th nd", caseless=True).setResultsName("numbersuffix")
 
 # numberedStreet = ~streetNumberSuffix+
-numberedStreet = (OneOrMore(Word(nums))+streetNumberSuffix).setParseAction(lambda toks: "".join(toks)).setResultsName("numberedstreet")
+numberedStreet = (OneOrMore(Word(nums))+Optional(streetNumberSuffix)).setParseAction(lambda toks: "".join(toks)).setResultsName("numberedstreet")
 
-# types of streets - extend as desired
-predir = oneOf("N S E W NE SE NW SW", caseless=True).setResultsName('predir')
-
+directions=oneOf("N S E W NE SE NW SW", caseless=True)
+# Street name prefixes
+predir = directions.setResultsName('predir')
 predir.setParseAction(lambda t:t[0].strip())
+prequal = oneOf("Bus Hst Lp Old Pub Pvt Spr", caseless=True).setResultsName('prequal')
+pretypes=["Aero","Ave", "BIA Rd", "BLM Rd", "Cam", "Cnl", "Co Hwy", "Co Rd", "Co Rte", "Cyn", "Delta Rd", "Farm Rd", "Forest Rd", "FS Rd", "Hwy", "I-",
+"Lateral", "Lk", "Ln", "Loop", "Nat For Dev Rd", "Pass", "Plz", "Rd", "Row", "Rte", "Sec", "State Hwy", "State Rd", "State Rte", "Trl", "Tunl",
+"USFS Hwy", "USFS Rd", "US Hwy", "Via", "Vis"]
+  
+pretype = Or(map(lambda pt: CaselessLiteral(pt), pretypes))
+
+# Street name suffixes
 suftype = Combine( oneOf("Street St Boulevard Blvd Lane Ln Road Rd Avenue Ave "
                         "Circle Cir Cove Cv Drive Dr Parkway Pkwy Court Ct",
                         caseless=True) + Optional(".").suppress()).setResultsName("suftype")
+sufdir = predir.setResultsName('sufdir')
+sufqual = oneOf("Acc Bus Byp Con Exd Exn Lp Ovp Pvt Rmp Scn Spr Unp", caseless=True)
 
 # <streetname> ::== <word>+ | <digit>+<numbersuffix>*;
-streetname = (Group(OneOrMore(~suftype+Word(alphas))).setParseAction(lambda toks: " ".join(toks[0]))|numberedStreet)
+streetname = (Group(OneOrMore(~suftype+Word(alphas))).setParseAction(lambda toks: " ".join(toks[0]))|numberedStreet).setResultsName('streetname')
 
 # <street> ::== <predir>? <whitespace> <pretyp>? <whitespace> <prequal>? <whitespace> 
 #               <streetname> <whitespace> 
 #               <suftype>? <whitespace> <sufdir>? <whitespace>  <sufqual>?;
 
-street=Optional(predir("predir"))+streetname("streetname")+ZeroOrMore(suftype)
+street=Optional(predir+FollowedBy(White()).suppress())\
+      +Optional(pretype+White().suppress())\
+      +Optional(prequal+White().suppress())\
+      +streetname\
+      +Optional(White().suppress()+suftype)\
+      +Optional(White().suppress()+sufdir)\
+      +Optional(White().suppress()+sufqual)\
+
+
 
 address = number.setResultsName("housenumber") + street
 address.setResultsName('address')
@@ -149,7 +177,7 @@ intersection = ( street.setResultsName("intersectionA").setParseAction(lambda to
                  street.setResultsName("intersectionB").setParseAction(lambda toks: " ".join(toks)) )
 
 # Whole Address
-location= Optional(address)+Optional(addrSep)+Optional(place) + Optional(addrSep) + Optional(state) + Optional(addrSep).suppress() + Optional(zipcode)
+location= Optional(address) + addrSep + Optional(place) + addrSep + Optional(state) + addrSep + Optional(zipcode)
 
 
 test(zipsep, '+', '-')
@@ -168,7 +196,6 @@ test(location, "Portland, Oregon", {'place': 'Portland', 'state': 'OR'})
 test(location, "Portland, Ore. 97212-1234",{'place': 'Portland','state': 'OR', 'zipcode': '97212-1234'})
 test(location, "Oregon City, KS 12345-1234",{'place': 'Oregon City','state': 'KS', 'zipcode': '12345-1234'})
 test(location, "Oregon City, 12345-1234",{'place': 'Oregon City', 'zipcode': '12345-1234'})
-#address.setDebug(True)
 test(location, "Oregon City, KS 12345-1234", {'place': 'Oregon City','state': 'KS', 'zipcode': '12345-1234'})
 test(location, "Oregon City, 12345-1234", {'place': 'Oregon City', 'zipcode': '12345-1234'})
 test(location, "Oregon City, Oregon, 12345-1234", {'place': 'Oregon City', 'zipcode': '12345-1234'})
@@ -182,3 +209,18 @@ test(street, "SE 21St St.", {'predir': 'SE','suftype': 'St','streetname': '21st'
 test(intersection, "NE Foo Rd and 21ST Ave", {'intersectionA': 'NE Foo Rd', 'intersectionB': '21st Ave'})
 test(address, "123 SE 21St St.", {'housenumber': '123', 'predir': 'SE','streetname': '21st', 'suftype': 'St'})
 test(location, "123 Main St, Portland, Oregon, 97212",{'place': 'Portland', 'state': 'OR', 'zipcode': '97212'})
+test(location, "241 W 775 N, Portland, Ore. 97212", {'place': 'Portland', 'state': 'OR','zipcode': '97212', 'housenumber': '241', 'streetname': '775', 'sufdir': 'N'})
+test(location, "123 Main St, Oregon City, Oregon, 97212",{'place': 'Oregon City', 'state': 'OR', 'zipcode': '97212'})
+test(location, "123 Some Ave N, Oregon City, Oregon, 97212+4321",{'housenumber': '123', 'predir': None,'streetname': 'Some', 'suftype': 'Ave', 'sufdir': 'N','place': 'Oregon City', 'state': 'OR', 'zipcode': '97212-4321'})
+test(location, "123 1/2 Some Ave N, Oregon City, Oregon, 97212+4321",{'housenumber': '123 1/2', 'predir': None,'streetname': 'Some', 'suftype': 'Ave', 'sufdir': 'N','place': 'Oregon City', 'state': 'OR', 'zipcode': '97212-4321'})
+test(location, "123 1/2 SE Some Ave. N, Oregon City, Oregon, 97212+4321",{'housenumber': '123 1/2', 'predir': 'SE','streetname': 'Some', 'suftype': 'Ave', 'sufdir': 'N','place': 'Oregon City', 'state': 'OR', 'zipcode': '97212-4321'})
+test(location, "123 1/2 SE Some Ave,North Bend, Oregon, 97212+4321",{'housenumber': '123 1/2', 'predir': 'SE','streetname': 'Some', 'suftype': 'Ave','place': 'North Bend', 'state': 'OR', 'zipcode': '97212-4321'})
+test(location, "G123 1/2 SE Some Ave.,North Bend, Oregon, 97212+4321",{'housenumber': 'G123 1/2', 'predir': 'SE','streetname': 'Some', 'suftype': 'Ave','place': 'North Bend', 'state': 'OR', 'zipcode': '97212-4321'})
+test(location, "G123 1/2 SE Some Other Ave. N,North Bend, Oregon, 97212+4321",{'housenumber': 'G123 1/2', 'predir': 'SE','streetname': 'Some Other', 'suftype': 'Ave','place': 'North Bend', 'state': 'OR', 'zipcode': '97212-4321'})
+test(address, "123 E Old Airport Rd SW",{'predir': 'E','housenumber':'123','prequal': 'Old', 'streetname': 'Airport', 'suftype': 'Rd', 'sufdir': 'SW'})
+test(location, "123 E Old Airport Rd SW, Portland,97212",{'predir': 'E','housenumber':'123','prequal': 'Old', 'streetname': 'Airport', 'suftype': 'Rd', 'sufdir': 'SW', 'zipcode': '97212'})
+test(location, "123 E Old Airport Rd SW 97212",{'predir': 'E','housenumber':'123','prequal': 'Old', 'streetname': 'Airport', 'suftype': 'Rd', 'sufdir': 'SW', 'zipcode': '97212'})
+test(location, "123 E Old Airport Rd SW, North Bend, 97212",{'predir': 'E','housenumber':'123','prequal': 'Old', 'streetname': 'Airport', 'suftype': 'Rd', 'sufdir': 'SW', 'place': 'North Bend','zipcode': '97212'})
+test(location, '18196 68th Ave Bend Oregon', {'housenumber': '18196','streetname': '68th','suftype':'Ave','place': 'Bend','state':'OR' })
+test(location, '18196 68th Ave North Bend Oregon', {'housenumber': '18196','streetname': '68th','suftype':'Ave','place': 'North Bend','state':'OR' })
+exit(exit_val)
