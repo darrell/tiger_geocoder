@@ -1,4 +1,5 @@
 import sys
+import re
 from pyparsing import *
 #import address_helpers
 
@@ -55,6 +56,7 @@ def test(p,s,expected):
   global exit_val
   failed=False
   exit_str=''
+
   try:
       result = p.parseString(s)
   except ParseException, pe:
@@ -94,6 +96,12 @@ def test(p,s,expected):
     print "-----------"
 
   
+# number can be any of the forms 123, 21B, or 23 1/2
+number = ( Combine(Word('G'+nums,nums) + 
+                   Optional(oneOf(list(alphas))+FollowedBy(White()))) + \
+            Optional(Optional("-") + "1/2")
+         ).setParseAction(keepOriginalText, lambda t:t[0].strip())
+
 # Zipcodes
 zipsep = oneOf( "+ -").setParseAction( replaceWith('-') )
 zip5 = Word(nums, exact=5).setResultsName('zip5')
@@ -103,14 +111,14 @@ zip4.setResultsName('zip4')
 zipcode = Combine(zip5.setResultsName('zip') +Optional(zip4.setResultsName('zip4'))).setParseAction(lambda toks: "".join(toks[0])).setResultsName('zipcode')
 #zipcode = Regex('\d{5}[-+]{0,1}\d{4}').setResultsName('zipcode')
 
-# States
-state=getStates()
 # address component separator
 #addrSep=Optional(ZeroOrMore(White())+ZeroOrMore(Literal(','))+ZeroOrMore(White())).suppress()
 #addrSep=(ZeroOrMore(White())+ZeroOrMore(Literal(','))+ZeroOrMore(White())).suppress()
 comma=ZeroOrMore(White())+Literal(',')+ZeroOrMore(White())
-addrSep=Or([OneOrMore(White()),comma,LineEnd()])
+addrSep=Or([OneOrMore(White()),comma,LineEnd()]).suppress()
 
+# States
+state=getStates()
 #Places
 try:
   place = getPlaces()
@@ -123,11 +131,6 @@ place=place.setResultsName('place')
 #House Number & street
 # began with code cribbed from pyparsing example code at
 # http://pyparsing.wikispaces.com/file/view/streetAddressParser.py
-# number can be any of the forms 123, 21B, or 23 1/2
-number = ( Combine(Word('G'+nums,nums) + 
-                   Optional(oneOf(list(alphas))+FollowedBy(White()))) + \
-            Optional(Optional("-") + "1/2")
-         ).setParseAction(keepOriginalText, lambda t:t[0].strip())
 
 word = Word(alphas+'.'+'-')
 #words = Group(OneOrMore(~Literal("Ave")+Word(alphas)))+"Ave"
@@ -179,8 +182,19 @@ intersection = ( street.setResultsName("intersectionA").setParseAction(lambda to
                  oneOf('and & at',caseless=True) +
                  street.setResultsName("intersectionB").setParseAction(lambda toks: " ".join(toks)) )
 
+def validateState(s,l,t):
+  rx=re.compile('(\s*,*\s*\d|\s*$)')
+  remainder=s[getTokensEndLoc():].strip()
+  m=rx.match(remainder)
+  #res=state.keepOriginalText().parseString(s[l:])
+  #print res
+  #print m
+  if m==None:
+    raise ParseException("state match not follwed by zip or EOL. Instead found: %s" % remainder)
+  return t
+
 # Whole Address
-location= Optional(address + addrSep) + Optional(place + addrSep) + Optional(state + addrSep) + Optional(zipcode)
+location= Optional(address + addrSep) + Optional(place + addrSep) + Optional(state + addrSep).setParseAction(validateState) + Optional(zipcode)
 
 
 test(zipsep, '+', '-')
