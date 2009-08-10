@@ -51,6 +51,7 @@
 -- StreetAddress:DirectionPrefixAbbreviation:StreetName:StreetTypeAbbreviation:
 -- DirectionSuffixAbbreviation:Location:StateAbbreviation:ZipCode
 -- This is more standardized and better for use with a geocoder.
+set search_path=tiger,public;
 CREATE OR REPLACE FUNCTION normalize_address(
     in_rawInput TEXT
 ) RETURNS norm_addy
@@ -407,7 +408,6 @@ BEGIN
                  WHERE name ~ lower('^(' || array_to_string(addrArray[anInt:addrArrayLen],')(| ') || ')$')
                  ORDER BY length(name) DESC
                  LIMIT 1;
-
     IF FOUND THEN
       -- If we didn't find the street before, this should be it now
       IF result.streetName IS NULL THEN
@@ -508,11 +508,13 @@ BEGIN
   END IF;
 
   IF result.location IS NULL AND result.zip is NOT NULL THEN
-    SELECT city INTO result.location
-                       FROM zip_info
-                      WHERE result.zip = zip_info.zip;
+    SELECT coalesce(place,countysub,countyfull) INTO result.location
+                       FROM zip_lookup
+                      WHERE result.zip = zip_lookup.zip;
   END IF;
 
+  -- everything else goes into internal
+  result.internal := array_to_string(addrArray, ' ');
   -- might want to change to text
   result.address := to_number(addressString, '99999999999');
 
