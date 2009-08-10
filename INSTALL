@@ -25,6 +25,9 @@ psql -q -U someuser -f /usr/share/pgsql/contrib/lwpostgis.sql YOURDB
 psql -q -U someuser -f /usr/share/pgsql/contrib/spatial_ref_sys.sql YOURDB
 psql -q -U someuser -f /usr/share/pgsql/contrib/fuzzystrmatch.sql YOURDB
 
+You should also enable constraint_exclusion in your postgresql.conf.
+
+
 == Loading TIGER data ==
 Get TIGER data from: http://www.census.gov/geo/www/tiger/tgrshp2008/tgrshp2008.html
 
