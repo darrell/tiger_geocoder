@@ -138,24 +138,30 @@ BEGIN
   END IF;
 
   -- Look for the state abbrev, how many people type out a state name?
+  -- if they do, we try to grab it below
   FOR anInt IN REVERSE addrArrayLen..1 LOOP
     EXIT WHEN stateString IS NOT NULL;
+    raise DEBUG 'looking for state in "%"', addrArray[anInt];
+    -- SELECT stusps INTO tempString
+    --                FROM state
+    --                WHERE stusps=addrArray[anInt];
+    SELECT abbrev INTO tempString
+                   FROM state_lookup
+                    WHERE addrArray[anInt] ILIKE replace(abbrev,'.','')
+                      OR addrArray[anInt] ILIKE replace(gpoabbrev,'.','')
+                      OR addrArray[anInt] ILIKE replace(altabbrev,'.','');
+    raise DEBUG 'tempString is "%", len %',tempString, length(tempString);
 
-    SELECT stusps INTO tempString
-                   FROM state
-                   WHERE stusps ilike addrArray[anInt];
-
-    IF FOUND THEN
+    IF length(tempString) > 0 THEN
       stateString := tempString;
       result.stateAbbrev := stateString;
       addrArrayLen := anInt-1;
       addrArray := addrArray[1:addrArrayLen];
-
-      raise DEBUG 'addrArray after state is now: %',addrArray ;
     END IF;
   END LOOP;
-
-  -- drop out if we're done
+  raise DEBUG 'addrArray after state1 is now: %',addrArray ;
+  --
+  --   -- drop out if we're done
   IF addressString IS NULL AND addrArrayLen = 0 THEN
     result.parsed := TRUE;
     RETURN result;
@@ -163,9 +169,8 @@ BEGIN
 
   IF result.stateAbbrev IS NULL AND result.zip IS NOT NULL THEN
     -- get the state from the zipcodes, if we can
-    SELECT stusps INTO tempString
-              FROM zip_info JOIN state USING (statefp)
-              WHERE zip = result.zip;
+    SELECT state INTO tempString
+              FROM zip_lookup WHERE zip = result.zip;
 
     IF FOUND THEN
       result.stateAbbrev := tempString;
@@ -173,34 +178,36 @@ BEGIN
   END IF;
 
   IF result.stateAbbrev IS NULL THEN
+    -- SEEMS TO GIVE TOO MANY FALSE POSITIVES
+    --
     -- Alright, try the hard(er) ways to figure out the state, if we can..
-    FOR anInt IN 1..addrArrayLen LOOP
-      EXIT WHEN result.stateAbbrev IS NOT NULL;
-
-      SELECT stusps::text as abbrev, array_upper(regexp_split_to_array(name,' '),1) as len INTO lookupRec
-                   FROM state
-                   WHERE name ~ lower('(' || array_to_string(addrArray[anInt:addrArrayLen],')(| ') || ')$')
-                   ORDER BY length(name) DESC
-                   LIMIT 1;
-
-      raise DEBUG 'anInt: %, tempString: %', anInt, tempString;
-
-      IF FOUND THEN
-        stateString := lookupRec.abbrev;
-        result.stateAbbrev := stateString;
-        addrArrayLen := anInt-1;
-        addrArray := addrArray[1:addrArrayLen];
-
-        raise DEBUG 'addrArray after state is now: %',addrArray ;
-      END IF;
-    END LOOP;
+    -- FOR anInt IN 1..addrArrayLen LOOP
+    --   EXIT WHEN result.stateAbbrev IS NOT NULL;
+    --   SELECT abbrev, array_upper(regexp_split_to_array(name,' '),1) AS len INTO lookupRec
+    --                FROM state_lookup
+    --                WHERE name ~ lower('(' || array_to_string(addrArray[anInt:addrArrayLen],')(| ') || ')$')
+    --                ORDER BY length(name) DESC
+    --                LIMIT 1;
+    --
+    --   raise DEBUG 'anInt: %, tempString: %', anInt, tempString;
+    --
+    --   IF FOUND THEN
+    --     raise DEBUG 'matched state on %',lower('(' || array_to_string(addrArray[anInt:addrArrayLen],')(| ') || ')$');
+    --     stateString := lookupRec.abbrev;
+    --     result.stateAbbrev := stateString;
+    --     addrArrayLen := anInt-1;
+    --     addrArray := addrArray[1:addrArrayLen];
+    --
+    --     raise DEBUG 'addrArray after state2 is now: %',addrArray ;
+    --   END IF;
+    -- END LOOP;
 
     IF result.stateAbbrev IS NULL THEN
       FOR anInt IN 1..addrArrayLen LOOP
         EXIT WHEN result.stateAbbrev IS NOT NULL;
 
-        SELECT stusps::text as abbrev, array_upper(regexp_split_to_array(name,' '),1) as len INTO lookupRec
-                     FROM state
+        SELECT abbrev, array_upper(regexp_split_to_array(name,' '),1) as len INTO lookupRec
+                     FROM state_lookup
                      WHERE dmetaphone(name) = dmetaphone(array_to_string(addrArray[anInt:addrArrayLen],' '))
                      ORDER BY levenshtein_ignore_case(name,array_to_string(addrArray[anInt:addrArrayLen],' ')), length(name) DESC
                      LIMIT 1;
@@ -213,7 +220,7 @@ BEGIN
           addrArrayLen := anInt-1;
           addrArray := addrArray[1:addrArrayLen];
 
-          raise DEBUG 'addrArray after state is now: %',addrArray ;
+          raise DEBUG 'addrArray after state3 is now: %',addrArray ;
         END IF;
       END LOOP;
     END IF;
@@ -261,15 +268,15 @@ BEGIN
 
   -- Look for internal address components that we don't want
   -- this is simple currently since we don't have any multi-word secondary units
-  FOR anInt in addrArrayLen..1 LOOP
+  FOR anInt in REVERSE addrArrayLen..1 LOOP
     EXIT WHEN result.internal IS NOT NULL;
-
     SELECT abbrev INTO tempString FROM secondary_unit_lookup
-                  WHERE name ~ lower('^' || addrArray[anInt] || '$');
+                  WHERE name ilike addrArray[anInt];
 
     -- If we found one, then dump everything from it to the end into internal
     IF FOUND THEN
         result.internal := array_to_string(addrArray[anInt:addrArrayLen],' ');
+        raise DEBUG 'found internal of "%"', result.internal;
         addrArrayLen := anInt-1;
         addrArray := addrArray[1:addrArrayLen];
     END IF;
