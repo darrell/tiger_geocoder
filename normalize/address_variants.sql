@@ -32,7 +32,7 @@ CREATE OR REPLACE FUNCTION
     END IF;
     
     IF in_addr.stateAbbrev IS NOT NULL THEN
-      my_statefp := statefp from state where stusps ilike in_addr.stateAbbrev;
+      my_statefp := statefp from state_lookup where abbrev ilike in_addr.stateAbbrev;
     END IF;
     stateAbrv:=upper(in_addr.stateAbbrev);
 
@@ -41,7 +41,10 @@ CREATE OR REPLACE FUNCTION
     DROP TABLE IF EXISTS addr_var_temp;
     
     stmt := $$ CREATE TEMP TABLE addr_var_temp
-    AS SELECT DISTINCT ON 
+    AS SELECT q.*,e.zipl as zipl_a,
+         e.zipr as zipr_a 
+    FROM (
+      SELECT DISTINCT ON 
      (a.predirabrv,a.pretypabrv,a.prequalabr,
      a.name,a.sufdirabrv,a.suftypabrv,a.sufqualabr,
      state, a.statefp,
@@ -59,8 +62,6 @@ CREATE OR REPLACE FUNCTION
       a.sufqualabr as sufqualabr_a,
       $$  || quote_literal(stateAbrv) || $$ as state,
       a.statefp,
-      e.zipl as zipl_a,
-      e.zipr as zipr_a,
       b.tlid as tlid_b,
       b.fullname as fullname_b,
       b.predirabrv as predirabrv_b,
@@ -78,15 +79,22 @@ CREATE OR REPLACE FUNCTION
       FROM featnames AS a 
       LEFT JOIN featnames AS b 
       --statefp is used by constraint exclusion, you *really* want to have it
-      ON ((a.street_snd=b.street_snd or a.tlid=b.tlid) AND a.statefp=b.statefp) 
-      LEFT JOIN edges as e ON (a.tlid=e.tlid and a.statefp=e.statefp) 
+      ON ((a.street_snd=b.street_snd or a.tlid=b.tlid) AND a.statefp=b.statefp)
       WHERE b.name is not null
-      AND NOT a.fullname ILIKE b.fullname
-      AND a.name ilike $$ || quote_literal(in_addr.streetName);
-
-    IF stateAbrv IS NOT NULL THEN
-      stmt := stmt || ' AND a.statefp=' || quote_literal(my_statefp);
-    END IF;
+      AND NOT a.fullname = b.fullname
+      AND upper(a.name) = $$ || upper(quote_literal(in_addr.streetName)) 
+       || CASE 
+            WHEN stateAbrv IS NOT NULL THEN ' AND a.statefp=' || quote_literal(my_statefp)
+            ELSE ''
+          END
+      || $$
+      ) as q 
+      LEFT JOIN edges as e ON (q.tlid_a=e.tlid)
+      $$ || CASE
+           WHEN stateAbrv IS NOT NULL THEN ' WHERE e.statefp=' || quote_literal(my_statefp)
+           ELSE ''
+           END
+      ;
 
     RAISE DEBUG 'stmt: %', stmt;
     EXECUTE stmt;
@@ -112,25 +120,11 @@ CREATE OR REPLACE FUNCTION
               exact,levenshtein
              FROM addr_var_temp
              -- oh for the want of a case insensitive "is distinct"
-             WHERE ((predirabrv_a IS NULL AND in_addr.preDirAbbrev IS NULL) 
-                      OR predirabrv_a ilike in_addr.preDirAbbrev) 
-                  AND
-                   ((pretypabrv_a IS NULL AND in_addr.preTypeAbbrev IS NULL) 
-                      OR pretypabrv_a ilike in_addr.preTypeAbbrev) 
-                  AND
-                    ((prequalabr_a IS NULL AND in_addr.preQualAbbrev IS NULL) 
-                      OR prequalabr_a ilike in_addr.preQualAbbrev) 
-                  AND
-                    ((sufdirabrv_a IS NULL AND in_addr.streetDirAbbrev IS NULL) 
-                      OR sufdirabrv_a ilike in_addr.streetDirAbbrev) 
-                  AND
-                    ((suftypabrv_a IS NULL AND in_addr.streetTypeAbbrev IS NULL) 
-                      OR suftypabrv_a ilike in_addr.streetTypeAbbrev) 
-                  AND
-                    ((sufqualabr_a IS NULL AND in_addr.streetQualAbbrev IS NULL) 
-                      OR sufqualabr_a ilike in_addr.streetQualAbbrev)
-                  AND
-                    name_a ilike in_addr.streetName
+             WHERE (upper(name_a),upper(predirabrv_a),upper(pretypabrv_a), upper(prequalabr_a),
+                    upper(sufdirabrv_a),upper(suftypabrv_a),upper(sufqualabr_a))
+                    IS NOT DISTINCT FROM
+                    (upper(in_addr.streetName),upper(in_addr.preDirAbbrev),upper(in_addr.preTypeAbbrev),upper(in_addr.preQualAbbrev),
+                     upper(in_addr.streetDirAbbrev),upper(in_addr.streetTypeAbbrev),upper(in_addr.streetQualAbbrev))
 
       LOOP
         RAISE DEBUG 'got: %', similar;
@@ -144,7 +138,9 @@ CREATE OR REPLACE FUNCTION
           IF similar.exact OR similar.levenshtein=0 THEN
             relevance := 1.0;
           ELSE
-            relevance := (1-(similar.levenshtein/cast(greatest(length(similar.fullname_a),length(similar.fullname_b))as double precision)));
+            -- deduct .1 for inexact
+            relevance := 0.9;
+            relevance := (relevance-(similar.levenshtein/cast(greatest(length(similar.fullname_a),length(similar.fullname_b))as double precision)));
             raise DEBUG 'here with: %', relevance;
           --relevance:=1.0;
           END IF;
@@ -159,7 +155,7 @@ CREATE OR REPLACE FUNCTION
           RETURN NEXT;
         END LOOP;
       END LOOP addrs;
-    DROP TABLE IF EXISTS addr_var_temp;    
+    --DROP TABLE IF EXISTS addr_var_temp;    
     RETURN;
   END;
 $_$ language plpgsql STRICT;
