@@ -631,6 +631,12 @@ if [ "${CREATE_INDEXES}" = 'true' ]; then
         DROP INDEX IF EXISTS  ${schema}.${idx} ;
         CREATE INDEX ${idx} on  ${schema}.${table} using btree(${column});
 EOT
+        if [ 'name' = "${column}" ]; then
+          cat<<EOT | ${PSQL_CMD_NULL}
+          DROP INDEX IF EXISTS  ${schema}.${table}_${column}_upper_idx ;
+          CREATE INDEX ${idx} on  ${schema}.${table} using btree(upper(${column}));
+EOT
+        fi
        fi
      done
    done
