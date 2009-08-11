@@ -520,8 +520,6 @@ BEGIN
                       WHERE result.zip = zip_lookup.zip;
   END IF;
 
-  -- everything else goes into internal
-  result.internal := array_to_string(addrArray, ' ');
   -- might want to change to text
   result.address := to_number(addressString, '99999999999');
 
