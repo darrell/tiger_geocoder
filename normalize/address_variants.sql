@@ -80,7 +80,8 @@ CREATE OR REPLACE FUNCTION
       LEFT JOIN featnames AS b 
       --statefp is used by constraint exclusion, you *really* want to have it
       ON ((a.street_snd=b.street_snd or a.tlid=b.tlid) AND a.statefp=b.statefp)
-      WHERE b.name is not null
+      -- do not accept NULLS or numbered streets as alternates (e.g. 11th)
+      WHERE NOT (b.name IS NULL OR upper(b.name) ~ E'^\\d+(TH|RD|ND)$')
       AND NOT a.fullname = b.fullname
       AND upper(a.name) = $$ || upper(quote_literal(in_addr.streetName)) 
        || CASE 
@@ -89,11 +90,22 @@ CREATE OR REPLACE FUNCTION
           END
       || $$
       ) as q 
-      LEFT JOIN edges as e ON (q.tlid_a=e.tlid)
+      LEFT JOIN edges as e ON (q.tlid_a=e.tlid) WHERE true
       $$ || CASE
-           WHEN stateAbrv IS NOT NULL THEN ' WHERE e.statefp=' || quote_literal(my_statefp)
+           WHEN stateAbrv IS NOT NULL THEN ' AND e.statefp=' || quote_literal(my_statefp)
            ELSE ''
            END
+        || CASE 
+            WHEN in_addr.zip IS NOT NULL 
+              THEN E' AND substr(\'' || in_addr.zip ||E'\',1,3) IN (substr(e.zipl,1,3),substr(e.zipr,1,3))' 
+            ELSE ''
+            END
+        || CASE
+              WHEN in_addr.address IS NOT NULL
+                THEN 'AND (' || in_addr.address || ' BETWEEN e.ltoadd::integer AND e.lfromadd::integer OR ' 
+                      || in_addr.address || ' BETWEEN e.rtoadd::integer AND e.rfromadd::integer)'
+              ELSE ''
+              END
       ;
 
     RAISE DEBUG 'stmt: %', stmt;
@@ -155,7 +167,101 @@ CREATE OR REPLACE FUNCTION
           RETURN NEXT;
         END LOOP;
       END LOOP addrs;
-    --DROP TABLE IF EXISTS addr_var_temp;    
+    DROP TABLE IF EXISTS addr_var_temp;    
     RETURN;
   END;
 $_$ language plpgsql STRICT;
+
+CREATE OR REPLACE FUNCTION 
+  address_variants_exact(in_addr norm_addy, 
+                   OUT out_addy norm_addy,
+                   OUT is_primary boolean,
+                   OUT relevance double precision) 
+  RETURNS SETOF record AS $_$
+  DECLARE
+    stateAbrv  text;
+    my_statefp text;
+    stmt text;
+    rec record;
+  BEGIN
+    IF in_addr.streetName IS NULL THEN
+      RETURN;
+    END IF;
+    
+    IF in_addr.stateAbbrev IS NOT NULL THEN
+      my_statefp := statefp from state_lookup where abbrev ilike in_addr.stateAbbrev;
+    END IF;
+    stateAbrv:=upper(in_addr.stateAbbrev);
+    relevance:=1;
+    stmt:= $$ 
+      SELECT DISTINCT predirabrv,pretypabrv,
+          prequalabr,name,suftypabrv,
+          sufdirabrv,sufqualabr,paflag
+       FROM featnames as fn
+       WHERE tlid IN (
+         SELECT e.tlid from featnames as fn
+          JOIN edges as e on (fn.tlid=e.tlid)
+         WHERE upper(fn.name)=$$||quote_literal(upper(in_addr.streetName))||
+         CASE WHEN my_statefp IS NOT NULL 
+          THEN 'AND e.statefp='||quote_literal(my_statefp)|| ' AND fn.statefp='||quote_literal(my_statefp)
+          ELSE ''
+         END
+         ||$$ AND lfromadd ~ E'^\\d+$' AND  rfromadd ~ E'^\\d+$'
+           AND 
+           (upper(predirabrv),upper(pretypabrv), upper(prequalabr),
+            upper(sufdirabrv),upper(suftypabrv),upper(sufqualabr))
+          IS NOT DISTINCT FROM ($$
+            || coalesce(quote_literal(upper(in_addr.preDirAbbrev)),'NULL') || ','
+            || coalesce(quote_literal(upper(in_addr.preTypeAbbrev)),'NULL')|| ','
+            || coalesce(quote_literal(upper(in_addr.preQualAbbrev)),'NULL')|| ','
+            || coalesce(quote_literal(upper(in_addr.streetDirAbbrev)),'NULL')|| ','
+            || coalesce(quote_literal(upper(in_addr.streetTypeAbbrev)),'NULL')|| ','
+            || coalesce(quote_literal(upper(in_addr.streetQualAbbrev)),'NULL') 
+          || ') '
+          || CASE
+              WHEN in_addr.address IS NOT NULL
+                THEN ' AND ' || in_addr.address || ' BETWEEN least(lfromadd::integer,rfromadd::integer) AND greatest(ltoadd::integer,rtoadd::integer)'
+                ELSE ''
+              END
+          || ')'
+      ;
+
+      RAISE DEBUG 'stmt: %', stmt;
+      FOR rec IN EXECUTE stmt LOOP
+        out_addy.address:=in_addr.address;
+        out_addy.preDirAbbrev := rec.predirabrv;
+        out_addy.preTypeAbbrev := rec.pretypabrv;
+        out_addy.preQualAbbrev := rec.prequalabr;
+        out_addy.streetName := rec.name;
+        out_addy.streetTypeAbbrev := rec.suftypabrv;
+        out_addy.streetDirAbbrev := rec.sufdirabrv;
+        out_addy.streetQualAbbrev := rec.sufqualabr;
+        out_addy.internal:=in_addr.internal;
+        out_addy.zip4:=NULL; -- do not trust just yet
+        out_addy.parsed:=in_addr.parsed;
+        out_addy.location:=in_addr.location;
+        out_addy.zip:=in_addr.zip;
+        out_addy.stateAbbrev:=coalesce((SELECT state FROM zip_lookup WHERE zip_lookup.zip=out_addy.zip LIMIT 1),stateAbrv);
+        is_primary := rec.paflag = 'P';
+        RETURN NEXT;
+      END LOOP;
+    END;
+$_$ LANGUAGE plpgsql stable ;
+
+CREATE OR REPLACE FUNCTION address_variants_exact(instring text, 
+                                            OUT out_addy norm_addy,
+                                            OUT is_primary boolean,
+                                            OUT relevance double precision)
+  RETURNS SETOF record AS $_$
+  DECLARE
+  rec record;
+  BEGIN
+    FOR rec in SELECT * from address_variants_exact(normalize_address(instring)) LOOP
+      out_addy:=rec.out_addy;
+      relevance:=rec.relevance;
+      is_primary:=rec.is_primary;
+      RETURN NEXT;
+    END LOOP;
+    RETURN;
+  END;
+$_$ language plpgsql stable strict;
