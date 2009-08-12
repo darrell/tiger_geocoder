@@ -5,10 +5,7 @@ CREATE OR REPLACE FUNCTION pprint_addy(a norm_addy, show_internal boolean) RETUR
    IF NOT a.parsed THEN
      RETURN NULL;
    END IF;
-   ret:=array_to_string(ARRAY[a.address::text,upper(a.preDirAbbrev),initcap(a.preTypeAbbrev),initcap(a.preQualAbbrev),a.streetName,initcap(a.streetTypeAbbrev),upper(a.streetDirAbbrev),initcap(a.streetQualAbbrev)], ' '); 
-   IF show_internal AND a.internal IS NOT NULL THEN
-     ret := ret || ', ' || a.internal;
-   END IF;
+   ret:=pprint_addy_street(a, show_internal);
    IF  a.location IS NOT NULL THEN
     ret := ret || ', ' || a.location;
    END IF;
@@ -25,9 +22,30 @@ CREATE OR REPLACE FUNCTION pprint_addy(a norm_addy, show_internal boolean) RETUR
   RETURN ret;
 END;
 $$ LANGUAGE plpgsql immutable strict;
+
+CREATE OR REPLACE FUNCTION pprint_addy_street(a norm_addy, show_internal boolean) RETURNS text as $$
+  DECLARE
+    ret text;
+  BEGIN
+    IF NOT a.parsed THEN
+      RETURN NULL;
+    END IF;
+    ret:=array_to_string(ARRAY[a.address::text,upper(a.preDirAbbrev),initcap(a.preTypeAbbrev),initcap(a.preQualAbbrev),a.streetName,initcap(a.streetTypeAbbrev),upper(a.streetDirAbbrev),initcap(a.streetQualAbbrev)], ' '); 
+    IF show_internal AND a.internal IS NOT NULL THEN
+      ret := ret || ', ' || a.internal;
+    END IF;
+    RETURN ret;
+  END;
+$$ LANGUAGE plpgsql immutable strict;
+
 CREATE OR REPLACE FUNCTION pprint_addy(a norm_addy) RETURNS text AS $$
   BEGIN
   RETURN pprint_addy(a, true);
+  END;
+$$ LANGUAGE plpgsql immutable strict;
+CREATE OR REPLACE FUNCTION pprint_addy_street(a norm_addy) RETURNS text AS $$
+  BEGIN
+  RETURN pprint_addy_street(a, true);
   END;
 $$ LANGUAGE plpgsql immutable strict;
 
