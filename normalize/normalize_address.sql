@@ -108,7 +108,12 @@ BEGIN
 
     raise DEBUG 'addrArray after address is now: %', addrArray ;
   END IF;
-
+  -- FIXME: drop any '1/2' - we can't cope with this right now
+  IF addrArrayLen >= 1 AND (addrArray[1] = E'1/2' OR addrArray[1] = E'1\\2') THEN
+    raise DEBUG 'dropping 1/2 from array';
+    addrArray := addrArray[2:addrArrayLen];
+    addrArrayLen := addrArrayLen-1;
+  END IF;
   raise DEBUG 'addressString: %', addressString;
 
   -- There are two formats for zip code, the normal 5 digit, and
