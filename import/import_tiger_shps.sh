@@ -524,7 +524,10 @@ if [ "$STATELVL" = "true"  -o "${COUNTLVL}" = 'true' ]; then
     note "Processing state-level for $STATE..."
 
     create_schema $SCHEMA
-    if [ "$STATELVL" = "true" ]; then
+    # only load if dropped the table, otherwise, we'll keep
+    # re-appending state data if we're only trying to import county data
+    # this is probably also sub-optimal
+    if [ "$STATELVL" = "true" -a "$COUNTYLVL" = "true" -a \( "$DROP" = "true" -o "$DROP_SCHEMA" = "true" \) ]; then
       unzip_files_matching "$statedir/${FILEBASE}" 
       for file in $TMPDIR/${FILEBASE}_*.shp; do
         table_from_filename "$file"

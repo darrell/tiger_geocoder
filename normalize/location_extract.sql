@@ -1,3 +1,4 @@
+set search_path=tiger,public;
 -- location_extract(streetAddressString, stateAbbreviation)
 -- This function extracts a location name from the end of the given string.
 -- The first attempt is to find an exact match against the place
@@ -26,7 +27,7 @@ BEGIN
   END IF;
 
   IF stateAbbrev IS NOT NULL THEN
-    SELECT quote_literal(state.statefp) INTO statefp FROM state WHERE state.stusps = stateAbbrev;
+    SELECT quote_literal(state.statefp) INTO statefp FROM state_lookup as state WHERE state.abbrev = stateAbbrev;
   END IF;
 
   tempString := quote_literal(lower(array_to_string(street_array,' ')));

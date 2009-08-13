@@ -23,7 +23,7 @@ BEGIN
 
   ADDY.internal := parsed.internal;
 
-  in_statefp := statefp FROM state WHERE state.stusps = parsed.stateAbbrev;
+  in_statefp := statefp FROM state_lookup as state WHERE state.abbrev = parsed.stateAbbrev;
 
   -- There are a couple of different things to try, from the highest preference and falling back
   -- to lower-preference options.
@@ -54,13 +54,13 @@ BEGIN
       GROUP BY statefp,location,zip,column1 ORDER BY 4 desc, 5, 3
   LOOP
 
-    stmt := 'SELECT DISTINCT ON (sub.predirabrv,sub.name,sub.suftypabrv,sub.sufdirabrv,coalesce(p.name,zip.city,cs.name,co.name),s.stusps,sub.zip)'
+    stmt := 'SELECT DISTINCT ON (sub.predirabrv,sub.name,sub.suftypabrv,sub.sufdirabrv,coalesce(p.name,zip.city,cs.name,co.name),s.abbrev,sub.zip)'
          || '    sub.predirabrv   as fedirp,'
          || '    sub.name         as fename,'
          || '    sub.suftypabrv   as fetype,'
          || '    sub.sufdirabrv   as fedirs,'
          || '    coalesce(p.name,zip.city,cs.name,co.name)::varchar as place,'
-         || '    s.stusps as state,'
+         || '    s.abbrev as state,'
          || '    sub.zip as zip,'
          || '    interpolate_from_address(' || coalesce(quote_literal(parsed.address),'NULL') || ', to_number(sub.fromhn,''99999999'')::integer,'
          || '        to_number(sub.tohn,''99999999'')::integer, e.the_geom) as address_geom,'
@@ -106,7 +106,7 @@ BEGIN
          || '  LIMIT 20'
          || '    ) AS sub'
          || '  JOIN edges e ON (' || quote_literal(zip_info.statefp) || ' = e.statefp AND sub.tlid = e.tlid)'
-         || '  JOIN state s ON (' || quote_literal(zip_info.statefp) || ' = s.statefp)'
+         || '  JOIN state_lookup s ON (' || quote_literal(zip_info.statefp) || ' = s.statefp)'
          || '  JOIN faces f ON (' || quote_literal(zip_info.statefp) || ' = f.statefp AND (e.tfidl = f.tfid OR e.tfidr = f.tfid))'
          || '  LEFT JOIN zip_lookup_base zip ON (sub.zip = zip.zip)'
          || '  LEFT JOIN place p ON (' || quote_literal(zip_info.statefp) || ' = p.statefp AND f.placefp = p.placefp)'
