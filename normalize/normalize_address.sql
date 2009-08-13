@@ -109,12 +109,6 @@ BEGIN
     raise DEBUG 'addrArray after address is now: %', addrArray ;
   END IF;
 
-  -- FIXME: drop any '1/2' - we can't cope with this right now
-  IF addrArrayLen >= 1 AND (addrArray[1] = E'1/2' OR addrArray[1] = E'1\\2') THEN
-    raise DEBUG 'dropping 1/2 from array';
-    addrArray := addrArray[2:addrArrayLen];
-    addrArrayLen := addrArrayLen-1;
-  END IF;
   raise DEBUG 'addressString: %', addressString;
 
   -- There are two formats for zip code, the normal 5 digit, and
@@ -191,14 +185,14 @@ BEGIN
     --   EXIT WHEN result.stateAbbrev IS NOT NULL;
     --   SELECT abbrev, array_upper(regexp_split_to_array(name,' '),1) AS len INTO lookupRec
     --                FROM state_lookup
-    --                WHERE name ~ lower('(' || quote_literal(array_to_string(addrArray[anInt:addrArrayLen],')(| ')) || ')$')
+    --                WHERE name ~ lower('(' || array_to_string(addrArray[anInt:addrArrayLen],')(| ') || ')$')
     --                ORDER BY length(name) DESC
     --                LIMIT 1;
     --
     --   raise DEBUG 'anInt: %, tempString: %', anInt, tempString;
     --
     --   IF FOUND THEN
-    --     raise DEBUG 'matched state on %',lower('(' || quote_literal(array_to_string(addrArray[anInt:addrArrayLen],')(| ')) || ')$');
+    --     raise DEBUG 'matched state on %',lower('(' || array_to_string(addrArray[anInt:addrArrayLen],')(| ') || ')$');
     --     stateString := lookupRec.abbrev;
     --     result.stateAbbrev := stateString;
     --     addrArrayLen := anInt-1;
@@ -304,7 +298,7 @@ BEGIN
   -- this must be anchored to the front..
   SELECT abbrev, array_upper(regexp_split_to_array(name,' '),1) as len INTO lookupRec
                 FROM directional_lookup
-                WHERE name ~ lower('^(' || quote_literal(array_to_string(addrArray,')(| ')) || ')$')
+                WHERE name ~ lower('^(' || array_to_string(addrArray,')(| ') || ')$')
                 ORDER BY length(name) DESC
                 LIMIT 1;
 
@@ -338,7 +332,7 @@ BEGIN
 
   SELECT abbrev, array_upper(regexp_split_to_array(name,' '),1) as len INTO lookupRec
                 FROM street_type_lookup
-                WHERE name ~ lower('^(' || quote_literal(array_to_string(addrArray,')(| ')) || ')$')
+                WHERE name ~ lower('^(' || array_to_string(addrArray,')(| ') || ')$')
                   AND pretype
                 ORDER BY length(name) DESC
                 LIMIT 1;
@@ -356,7 +350,7 @@ BEGIN
 
   SELECT abbrev, array_upper(regexp_split_to_array(name,' '),1) as len INTO lookupRec
                 FROM qualabrv_lookup
-                WHERE name ~ lower('^(' || quote_literal(array_to_string(addrArray,')(| ')) || ')$')
+                WHERE name ~ lower('^(' || array_to_string(addrArray,')(| ') || ')$')
                   AND prequal
                 ORDER BY length(name) DESC
                 LIMIT 1;
@@ -378,7 +372,7 @@ BEGIN
 
     SELECT abbrev, array_upper(regexp_split_to_array(name,' '),1) as len INTO lookupRec
                  FROM street_type_lookup
-                 WHERE name ~ lower('^(' || quote_literal(array_to_string(addrArray[anInt:addrArrayLen],')(| ')) || ')$')
+                 WHERE name ~ lower('^(' || array_to_string(addrArray[anInt:addrArrayLen],')(| ') || ')$')
                    AND suftype
                  ORDER BY length(name) DESC
                  LIMIT 1;
@@ -418,7 +412,7 @@ BEGIN
 
     SELECT abbrev, array_upper(regexp_split_to_array(name,' '),1) as len INTO lookupRec
                  FROM directional_lookup
-                 WHERE name ~ lower('^(' || quote_literal(array_to_string(addrArray[anInt:addrArrayLen],')(| ')) || ')$')
+                 WHERE name ~ lower('^(' || array_to_string(addrArray[anInt:addrArrayLen],')(| ') || ')$')
                  ORDER BY length(name) DESC
                  LIMIT 1;
     IF FOUND THEN
@@ -441,7 +435,7 @@ BEGIN
 
     SELECT abbrev, array_upper(regexp_split_to_array(name,' '),1) as len INTO lookupRec
                  FROM qualabrv_lookup
-                 WHERE name ~ lower('^(' || quote_literal(array_to_string(addrArray[anInt:addrArrayLen],')(| ')) || ')$')
+                 WHERE name ~ lower('^(' || array_to_string(addrArray[anInt:addrArrayLen],')(| ') || ')$')
                    AND sufqual
                  ORDER BY length(name) DESC
                  LIMIT 1;
