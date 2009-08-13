@@ -2,10 +2,10 @@
 -- the PostGIS functions/types which are in public.
 SET search_path TO tiger,public;
 set client_min_messages=error;
-\set ON_ERROR_STOP true
 
 create schema tiger;
 
+\set ON_ERROR_STOP true
 begin;
 
 --DROP schema if exists tiger cascade;

@@ -278,8 +278,7 @@ Type Code	Expanded Full Text	Display Name Abbreviation	Spanish
 414	National Battlefield Site	Natl Bfld Site	-	-	N	Y
 415	National Conservation Area	Natl Cnsv Area	-	-	N	Y
 416	National Forest	Natl Forest	-	-	N	Y
-417	National Forest Development Road	Nat For Dev Rd	-	-	Y
-	N
+417	National Forest Development Road	Nat For Dev Rd	-	-	Y	N
 419	National Grasslands	Natl Grsslnds	-	-	N	Y
 420	National Historic Site	Natl Hist Site	-	-	N	Y
 421	National Historical Park	Natl Hist Pk	-	-	N	Y

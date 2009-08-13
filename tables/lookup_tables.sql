@@ -6,8 +6,8 @@ set client_min_messages = error;
 \i county_lookup.sql 
 \i countysub_lookup.sql 
 \i roads_local.sql 
-\i direction_lookup.sql 
 \i street_type_lookup.sql 
+\i load_appendix.sql 
 
 \i place_lookup.sql 
 

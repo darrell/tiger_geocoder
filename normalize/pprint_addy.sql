@@ -49,7 +49,7 @@ CREATE OR REPLACE FUNCTION pprint_addy_street(a norm_addy) RETURNS text AS $$
   END;
 $$ LANGUAGE plpgsql immutable strict;
 
-DROP CAST(norm_addy as text) IF EXISTS;
+DROP CAST IF EXISTS (norm_addy as text);
 CREATE CAST(norm_addy as text)  WITH FUNCTION pprint_addy(norm_addy);
 
 COMMENT ON FUNCTION pprint_addy(a norm_addy) IS $$

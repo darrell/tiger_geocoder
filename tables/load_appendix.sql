@@ -1,5 +1,6 @@
 set search_path=tiger;
 set client_encoding = 'latin1';
+\! ./prep_appendix.sh
 
 DROP TABLE IF EXISTS feat_dirs;
 CREATE TABLE feat_dirs (dir_code integer not null, name text not null, abbrev text not null, spanish boolean, translation text);
