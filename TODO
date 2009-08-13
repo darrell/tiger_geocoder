@@ -1,3 +1,6 @@
+correctly handle addreses like '1234 1/2 Main St'. Right now, we have
+nowhere to keep the 1/2.
+--
 Add the ability to limit the search to within a passed geometry.
 
 --
