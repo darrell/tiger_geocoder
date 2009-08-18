@@ -220,7 +220,7 @@ CREATE OR REPLACE FUNCTION
           || ') '
           || CASE
               WHEN in_addr.address IS NOT NULL
-                THEN ' AND ' || in_addr.address || ' BETWEEN least(lfromadd::integer,rfromadd::integer) AND greatest(ltoadd::integer,rtoadd::integer)'
+                THEN ' AND ' || abs(in_addr.address) || ' BETWEEN least(abs(lfromadd::integer),abs(rfromadd::integer)) AND greatest(abs(ltoadd::integer),abs(rtoadd::integer))'
                 ELSE ''
               END
           || ')'
