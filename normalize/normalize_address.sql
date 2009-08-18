@@ -90,6 +90,12 @@ BEGIN
   IF addrArrayLen IS NULL THEN
     RETURN result;
   END IF;
+  
+  -- strip off any USA, etc.
+  IF addrArray[addrArrayLen] ~* E'^(USA|U\\.S\\.A\\.|US|U\\.S\\.)$' THEN
+    addrArray:=addrArray[1:addrArrayLen-1];
+    addrArrayLen:=addrArrayLen-1;
+  END IF;
 
   -- strip off funny stuff (periods).  We dont want to split on them really tho.
   FOR anInt IN 1..addrArrayLen LOOP
