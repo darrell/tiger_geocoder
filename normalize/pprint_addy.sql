@@ -1,3 +1,4 @@
+SET search_path=tiger;
 CREATE OR REPLACE FUNCTION pprint_addy(a norm_addy, show_internal boolean) RETURNS text AS $$
   DECLARE
    ret text;
@@ -30,7 +31,7 @@ CREATE OR REPLACE FUNCTION pprint_addy_street(a norm_addy, show_internal boolean
     IF NOT a.parsed THEN
       RETURN NULL;
     END IF;
-    ret:=array_to_string(ARRAY[a.address::text,upper(a.preDirAbbrev),initcap(a.preTypeAbbrev),initcap(a.preQualAbbrev),a.streetName,initcap(a.streetTypeAbbrev),upper(a.streetDirAbbrev),initcap(a.streetQualAbbrev)], ' '); 
+    ret:=array_to_string(ARRAY[regexp_replace(a.address::text,  E'^-', '0'),upper(a.preDirAbbrev),initcap(a.preTypeAbbrev),initcap(a.preQualAbbrev),a.streetName,initcap(a.streetTypeAbbrev),upper(a.streetDirAbbrev),initcap(a.streetQualAbbrev)], ' '); 
     IF show_internal AND a.internal IS NOT NULL THEN
       ret := ret || ', ' || a.internal;
     END IF;

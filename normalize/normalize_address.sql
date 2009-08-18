@@ -101,8 +101,10 @@ BEGIN
   -- Assume that the house number begins with a digit, and extract it from
   -- the first element. This does break some rurual addresses, which
   -- may not start with a digit.
+  -- Addresses that begin with '0', as some in SW Portland, OR,
+  -- seem to be converted to negative by the Census
   IF addrArrayLen > 1 AND addrArray[1] ~ E'^[A-Z]*[-]*\\d' THEN
-    addressString := addrArray[1];
+    addressString := regexp_replace(addrArray[1], E'^0', '-');
     addrArray := addrArray[2:addrArrayLen];
     addrArrayLen := addrArrayLen-1;
 
