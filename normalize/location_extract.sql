@@ -37,7 +37,7 @@ BEGIN
        || '   name,'
        || '   levenshtein_ignore_case(' || tempString || ',name) as rating,'
        || '   length(name) as len'
-       || ' FROM place'
+       || ' FROM place_lookup'
        || ' WHERE ' || coalesce('statefp = ' || statefp || ' AND ','')
        || CASE WHEN NOT exact THEN
           '   metaphone(' || tempString || ', 6) = metaphone(name,6)'
@@ -48,7 +48,7 @@ BEGIN
        || '   name,'
        || '   levenshtein_ignore_case(' || tempString || ',name) as rating,'
        || '   length(name) as len'
-       || ' FROM cousub'
+       || ' FROM countysub_lookup'
        || ' WHERE ' || coalesce('statefp = ' || statefp || ' AND ','')
        || CASE WHEN NOT exact THEN
           '   metaphone(' || tempString || ',6) = metaphone(name,6)'
