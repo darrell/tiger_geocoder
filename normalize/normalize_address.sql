@@ -261,7 +261,7 @@ BEGIN
     EXIT WHEN result.location IS NOT NULL;
 
     locationString := location_extract(addrArray[anInt:addrArrayLen], result.stateAbbrev, true);
-
+    raise DEBUG 'locationString: %', locationString;
     IF locationString IS NOT NULL THEN
       result.location := locationString;
       addrArrayLen := anInt-1;
@@ -428,10 +428,12 @@ BEGIN
                  WHERE name ~ lower('^(' || array_to_string(addrArray[anInt:addrArrayLen],')(| ') || ')$')
                  ORDER BY length(name) DESC
                  LIMIT 1;
+    RAISE DEBUG 'lookupRec is %: result.streetName NULL is: %', lookupRec,result.streetName IS NULL;
     IF FOUND THEN
       -- If we didn't find the street before, this should be it now
       IF result.streetName IS NULL THEN
         result.streetName := array_to_string(addrArray[1:anInt-1],' ');
+        RAISE DEBUG 'here is %', result;
       END IF;
 
       result.streetdirabbrev := lookupRec.abbrev;
@@ -488,7 +490,9 @@ BEGIN
   -- wasn't a street at some point, but we never found an actual *street*, then swap
   -- whatever was most likely to be a street into the street
   -- we really need a street...
-  IF result.streetName IS NULL THEN
+  raise DEBUG 'result so far: %', result;
+  IF result.streetName IS NULL AND addrArrayLen = 0 THEN
+    raise debug 'here now';
     -- Special case for interstates
     IF addressString ~ E'^I-[0-9]\+$' THEN
         result.pretypeabbrev := 'I-';
@@ -519,13 +523,16 @@ BEGIN
       result.streetName := result.streetqualabbrev;
       result.streetqualabbrev := NULL;
     END IF;
+  ELSIF result.streetName IS NULL AND addrArrayLen > 0 THEN
+      result.streetName := array_to_string(addrArray,' ');
   END IF;
-
+  raise DEBUG 'result so far: %', result;
   -- handle interstates
   IF result.streetName ~ E'^I-[0-9]\+$' THEN
     result.pretypeabbrev := 'I-';
     result.streetName := substring(result.streetName,3);
   END IF;
+
 
   IF result.location IS NULL AND result.zip is NOT NULL THEN
     SELECT coalesce(place,countysub,countyfull) INTO result.location
