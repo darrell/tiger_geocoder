@@ -1,8 +1,7 @@
-Add the ability to limit the search to within a passed geometry.
-
+Create a house_no subtype to replace norm_addy.address, which we could then use to define 
+a whole set of comparison operators on, since integers don't work everywhere.
 --
-Address normalization would work better if we had an exhaustive
-list of possible values in the pre* and suf* fields of featnames
+Add the ability to limit the search to within a passed geometry.
 --
 if we are already loading a file, say, cousub from the state level,
 we should not append the county level equivalent files.
