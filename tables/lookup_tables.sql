@@ -16,4 +16,3 @@ set client_min_messages = error;
 \i zip_state.sql
 
 \i address_part_lookups.sql
-\i suffixes_lookup.sql
